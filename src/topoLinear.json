@@ -1,0 +1,169 @@
+{
+    "scene": {
+        "hosts": [
+            {
+                "type": "host",
+                "label": "h1",
+                "dns": "",
+                "iface": [
+                    {
+                        "ip": "192.168.0.2",
+                        "mask": "255.255.255.0",
+                        "gw": "192.168.0.1"
+                    }
+                ]
+            },
+            {
+                "type": "host",
+                "label": "h2",
+                "dns": "",
+                "iface": [
+                    {
+                        "ip": "10.0.0.2",
+                        "mask": "255.255.255.0",
+                        "gw": "10.0.0.1"
+                    }
+                ]
+            },
+            {
+                "type": "router",
+                "label": "r1",
+                "dns": "",
+                "iface": [
+                    {
+                        "ip": "192.168.0.1",
+                        "mask": "255.255.255.0",
+                        "gw": "0.0.0.0"
+                    },
+                    {
+                        "ip": "10.0.0.1",
+                        "mask": "255.255.255.0",
+                        "gw": "0.0.0.0"
+                    }
+                ],
+                "fwCommand": [
+                    "iptables -F",
+                    "iptables -t nat -F",
+                    "iptables -P INPUT ACCEPT",
+                    "iptables -P OUTPUT ACCEPT",
+                    "iptables -P FORWARD ACCEPT",
+                    "iptables -A FORWARD -p udp --dport 60 -j REJECT",
+                    "iptables -A FORWARD -p tcp --dport 81 -j REJECT",
+                    "iptables -A FORWARD -p icmp -d 10.0.0.1 --icmp-type echo-request -j DROP"
+                ]
+            }
+        ],
+        "switchs": [
+            {
+                "label": "s1"
+            },
+            {
+                "label": "s2"
+            }
+        ],
+        "links": [
+            {
+                "label": "h1_s1",
+                "to": "s1",
+                "from": "h1"
+            },
+            {
+                "label": "h2_s2",
+                "to": "s2",
+                "from": "h2"
+            },
+            {
+                "label": "s1_r1",
+                "to": "s1",
+                "from": "r1"
+            },
+            {
+                "label": "s2_r1",
+                "to": "s2",
+                "from": "r1"
+            }
+        ]
+    },
+    "test": [
+        {
+            "sourceIP": "192.168.0.2",
+            "destIP": "10.0.0.2",
+            "protocol": "tcp",
+            "sPort": "*",
+            "dPort": "81",
+            "expected": "deny"
+        },
+        {
+            "sourceIP": "10.0.0.2",
+            "destIP": "192.168.0.2",
+            "protocol": "tcp",
+            "sPort": "*",
+            "dPort": "81",
+            "expected": "deny"
+        },
+        {
+            "sourceIP": "192.168.0.2",
+            "destIP": "10.0.0.2",
+            "protocol": "tcp",
+            "sPort": "*",
+            "dPort": "80",
+            "expected": "accept"
+        },
+        {
+            "sourceIP": "10.0.0.2",
+            "destIP": "192.168.0.2",
+            "protocol": "tcp",
+            "sPort": "*",
+            "dPort": "80",
+            "expected": "accept"
+        },
+        {
+            "sourceIP": "192.168.0.2",
+            "destIP": "10.0.0.2",
+            "protocol": "udp",
+            "sPort": "*",
+            "dPort": "60",
+            "expected": "deny"
+        },
+        {
+            "sourceIP": "10.0.0.2",
+            "destIP": "192.168.0.2",
+            "protocol": "udp",
+            "sPort": "*",
+            "dPort": "60",
+            "expected": "deny"
+        },
+        {
+            "sourceIP": "192.168.0.2",
+            "destIP": "10.0.0.2",
+            "protocol": "udp",
+            "sPort": "*",
+            "dPort": "23",
+            "expected": "accept"
+        },
+        {
+            "sourceIP": "10.0.0.2",
+            "destIP": "192.168.0.2",
+            "protocol": "udp",
+            "sPort": "*",
+            "dPort": "23",
+            "expected": "accept"
+        },
+        {
+            "sourceIP": "192.168.0.2",
+            "destIP": "10.0.0.2",
+            "protocol": "icmp",
+            "sPort": "*",
+            "dPort": "*",
+            "expected": "deny"
+        },
+        {
+            "sourceIP": "10.0.0.2",
+            "destIP": "192.168.0.2",
+            "protocol": "icmp",
+            "sPort": "*",
+            "dPort": "*",
+            "expected": "accept"
+        }
+    ]
+}
