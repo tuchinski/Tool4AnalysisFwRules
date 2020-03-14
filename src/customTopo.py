@@ -162,7 +162,7 @@ class Tests:
 
 
 def readJsonFile():
-	with open('2redes.json') as f:
+	with open('topo_icmp.json') as f:
 		data = json.load(f)
 	
 	return data
@@ -299,7 +299,9 @@ def tests(net):
 			th1.join()
 			th2.join()
 		if(test.protocol == "icmp"):
-			hostSourceLabel.cmd("ping -n -c 1 " + test.destinationIP)
+			info("protocolo ICMP\n")
+			comando = "ping -n -c 2 " + test.destinationIP
+			hostSourceLabel.cmd(comando)
 		
 		path = []
 		hostNet = net.getNodeByName(host.label)
@@ -315,7 +317,7 @@ def tests(net):
 				time.sleep(0.2)				
 				analysisLog(iface.name, test, path)		
 		path.sort()
-		info(path)
+		info("path: " + str(path))
 		result(test)
 		fim = timeit.default_timer()
 		hostNet.cmd("mv *.txt /home/mininet/mininet/tcc/tool4analysisfwrules/src/teste" + str(numTest))
@@ -335,8 +337,6 @@ def analysisLog(iface, test, path):
 			pass	
 			#info([processedLine[0], iface])		
 			path.append([processedLine[0], iface])
-
-
 	f.close()
 
 
@@ -357,7 +357,31 @@ def processTcpdumpLine(lineLog):
 		return time, de, para, flag
 
 	elif("ICMP" in lineLog):
-		return ["","","",""]
+		#Exemplo de entrada '1584169899.447183 IP 10.0.0.2 > 192.168.0.2: ICMP echo request, id 22257, seq 2, length 64'
+
+		# Separa a linha em duas partes, uma contém o timestamp, ip de origem e destino
+		# e a outra parte possui tipo ICMP, id, sequencia e tamanho da msg
+		str_split = lineLog.split(':')
+
+		#Separa a primeira parte pelos espacos da String
+		time_orig_dest = str_split[0].split(' ')
+
+		#Separa a segunda parte pelas ',' da String
+		icmp_type_id_seq = str_split[1].split(',')
+
+		time = time_orig_dest[0]					# Timestamp
+		ip_orig = time_orig_dest[2]					# IP de origem
+		ip_dest = time_orig_dest[4]					# IP de destino
+
+		# Tira o espaço em branco no inicio do tipo ICMP
+		icmp_type = icmp_type_id_seq[0].lstrip()	# Tipo da msg ICMP
+
+		#Retira o " id" da variável
+		id_icmp = icmp_type_id_seq[1][4:]			# ID da msg ICMP
+
+		#Retira o ' seq' da variável
+		seq = icmp_type_id_seq[2][5:]				# Sequencia do ICMP
+		return [time,ip_orig,ip_dest,icmp_type,id_icmp,seq]
 
 	else:
 		lineLog = lineLog.split(" ")
