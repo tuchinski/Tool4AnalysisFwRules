@@ -3,7 +3,7 @@
         "hosts": [
             {
                 "type": "host",
-                "label": "h1",
+                "label": "x1",
                 "dns": "",
                 "iface": [
                     {
@@ -63,9 +63,9 @@
         ],
         "links": [
             {
-                "label": "h1_s1",
+                "label": "x1_s1",
                 "to": "s1",
-                "from": "h1"
+                "from": "x1"
             },
             {
                 "label": "h2_s2",

@@ -302,7 +302,7 @@ def tests(net):
 			hostSourceLabel.cmd("ping -n -c 1 " + test.destinationIP)
 		
 		path = []
-		hostNet = net.getNodeByName('h1')
+		hostNet = net.getNodeByName(host.label)
 		time.sleep(1)		
 		hostNet.cmd("killall -1 tcpdump")
 		time.sleep(1)		
