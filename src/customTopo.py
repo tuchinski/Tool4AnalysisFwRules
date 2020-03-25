@@ -44,7 +44,12 @@ class Command():
 	def configIface(self):
 		return "ifconfig " + self.name + " " + self.ip
 
-	def start_tcpdump(self):
+	# Cria um TCPDUMP ignorando os protocolos ICMP e ARP
+	def start_tcpdumpTCP_UDP(self):
+		return "sudo tcpdump -tt -n -i " + self.name + " -w " + self.name + ".log not icmp and not arp &"
+
+	# Cria um TCPDUMP ignorando os protocolos ARP
+	def start_tcpdumpICMP(self):
 		return "sudo tcpdump -tt -n -i " + self.name + " -w " + self.name + ".log not arp &"
 
 	def stop_tcpdump(self):
@@ -162,7 +167,7 @@ class Tests:
 
 
 def readJsonFile():
-	with open('topo_icmp.json') as f:
+	with open('cenario_teste.json') as f:
 		data = json.load(f)
 	
 	return data
@@ -236,12 +241,16 @@ def createTests(data):
 		listTests.append(Tests(sourceIP, destIP, protocol, sPort, dPort, expected))
 
 		
-def startTcpdumAllIface(net):
+def startTcpdumAllIface(net,type_test_protocol):
 	for host in listHosts:
 		for iface in host.iface:
 			command = Command(iface)
 			hostNET = net.getNodeByName(host.label)
-			hostNET.cmd(command.start_tcpdump())
+			if type_test_protocol == 'icmp':
+				hostNET.cmd(command.start_tcpdumpICMP())
+			else:
+				hostNET.cmd(command.start_tcpdumpTCP_UDP())
+
 
 
 def tcpServer(host, ip, port):
@@ -266,7 +275,7 @@ def tests(net):
 		hostDestLabel = ""
 		hostSourceLabel = ""
 		inicio = timeit.default_timer()
-		startTcpdumAllIface(net)
+		startTcpdumAllIface(net,test.protocol)
 		info("\nIniciando teste:\n---\n" + str(test) + "\n---\n")
 		for host in listHosts:
 			for iface in host.iface:
@@ -299,7 +308,6 @@ def tests(net):
 			th1.join()
 			th2.join()
 		if(test.protocol == "icmp"):
-			info("protocolo ICMP\n")
 			comando = "ping -n -c 2 " + test.destinationIP
 			hostSourceLabel.cmd(comando)
 		
@@ -331,11 +339,8 @@ def analysisLog(iface, test, path):
 	f = open(iface + ".txt", 'r')
 	lines = f.readlines()
 	for line in lines:
-		#info(line + "\n")
 		processedLine = processTcpdumpLine(line)
 		if(test.sourceIP == processedLine[1]):
-			pass	
-			#info([processedLine[0], iface])		
 			path.append([processedLine[0], iface])
 	f.close()
 
@@ -381,9 +386,9 @@ def processTcpdumpLine(lineLog):
 
 		#Retira o ' seq' da variável
 		seq = icmp_type_id_seq[2][5:]				# Sequencia do ICMP
-		return [time,ip_orig,ip_dest,icmp_type,id_icmp,seq]
+		return time,ip_orig,ip_dest,icmp_type,id_icmp,seq
 
-	else:
+	elif("UDP" in lineLog):
 		lineLog = lineLog.split(" ")
 
 		time = lineLog[0]
@@ -403,9 +408,9 @@ def result(test):
 	datagram = False
 	aux = 0
 	destHost = getHostDest(test)
+	contadorICMP = 0
 	f = open(destHost.name + ".txt")
 	lines = f.readlines()
-	
 	for line in lines:
 		if("Flags" in line):
 			processedLine = processTcpdumpLine(line)
@@ -426,8 +431,9 @@ def result(test):
 				break	
 
 			aux += 1
-		elif("ICMP" in line):
-			pass
+		elif(("ICMP" in line) or ("icmp" in line)):
+			# Verifica quantas linhas do protocolo ICMP existem no TCPDUMP do host de destino
+			contadorICMP += 1
 		else:
 			processedLine = processTcpdumpLine(line)
 			if(test.sourceIP == processedLine[1]):
@@ -448,20 +454,31 @@ def result(test):
 				info("\nTeste APROVADO - os pacotes não chegaram ao destino")
 
 					
-	elif(test.protocol == "ICMP"):
-		pass
+	elif(test.protocol == "icmp"):
+		if(test.expected == "accept"):
+			if(contadorICMP > 0):
+				info("\nTeste APROVADO - os pacotes chegaram ao destino")
+			else:
+				info("\nTeste REPROVADO - os pacotes NÃO chegaram ao destino")
+
+		elif(test.expected == "deny"):
+			if(contadorICMP == 0):
+				info("\nTeste APROVADO - os pacotes NÃO chegaram ao destino")
+			else:
+				info("\nTeste REPROVADO - os pacotes chegaram ao destino")
+
 	else:
 		if(test.expected == "accept"):
 			if(datagram == True):
-				info("\nTeste APROVADO - os pacotes chegaram ao destino")
+				info("\nTeste \e[32mAPROVADO - os pacotes chegaram ao destino")
 			else:
-				info("\nTeste REPROVADO - os pacotes não chegaram ao destino")
+				info("\nTeste \e[31mREPROVADO - os pacotes não chegaram ao destino")
 
 		if(test.expected == "deny"):
 			if(datagram == True):
-				info("\nTeste REPROVADO - os pacotes chegaram ao destino")			
+				info("\nTeste \e[31mREPROVADO - os pacotes chegaram ao destino")			
 			else:
-				info("\nTeste APROVADO - os pacotes não chegaram ao destino")
+				info("\nTeste \e[32mAPROVADO - os pacotes não chegaram ao destino")
 
 
 	f.close()
