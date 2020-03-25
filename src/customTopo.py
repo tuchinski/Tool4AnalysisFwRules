@@ -443,42 +443,42 @@ def result(test):
 	if(test.protocol == "tcp"):
 		if(test.expected == "accept"):
 			if(handshake == True):
-				info("\nTeste APROVADO - os pacotes chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 			else:
-				info("\nTeste REPROVADO - os pacotes não chegaram ao destino")
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes não chegaram ao destino \033[1;37;40m")
 
 		if(test.expected == "deny"):
 			if(handshake == True):
-				info("\nTeste REPROVADO - os pacotes chegaram ao destino")			
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes chegaram ao destino \033[1;37;40m")			
 			else:
-				info("\nTeste APROVADO - os pacotes não chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 
 					
 	elif(test.protocol == "icmp"):
 		if(test.expected == "accept"):
 			if(contadorICMP > 0):
-				info("\nTeste APROVADO - os pacotes chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 			else:
-				info("\nTeste REPROVADO - os pacotes NÃO chegaram ao destino")
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes NÃO chegaram ao destino \033[1;37;40m")
 
 		elif(test.expected == "deny"):
 			if(contadorICMP == 0):
-				info("\nTeste APROVADO - os pacotes NÃO chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 			else:
-				info("\nTeste REPROVADO - os pacotes chegaram ao destino")
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes chegaram ao destino \033[1;37;40m")
 
 	else:
 		if(test.expected == "accept"):
 			if(datagram == True):
-				info("\nTeste \e[32mAPROVADO - os pacotes chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 			else:
-				info("\nTeste \e[31mREPROVADO - os pacotes não chegaram ao destino")
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes não chegaram ao destino \033[1;37;40m")
 
 		if(test.expected == "deny"):
 			if(datagram == True):
-				info("\nTeste \e[31mREPROVADO - os pacotes chegaram ao destino")			
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes chegaram ao destino \033[1;37;40m")			
 			else:
-				info("\nTeste \e[32mAPROVADO - os pacotes não chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 
 
 	f.close()
