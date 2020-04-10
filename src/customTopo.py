@@ -12,6 +12,7 @@ import os
 import json
 import time
 import timeit
+import sys
 
 
 listHosts = []		# Lista de hosts (node)
@@ -166,8 +167,8 @@ class Tests:
 
 
 
-def readJsonFile():
-	with open('cenario_teste.json') as f:
+def readJsonFile(arquivo):
+	with open(arquivo) as f:
 		data = json.load(f)
 	
 	return data
@@ -548,7 +549,7 @@ def emptyNet():
 	exit()
 
 
-data = readJsonFile()
+data = readJsonFile(sys.argv[1])
 createObjects(data["scene"])
 createTests(data["test"])
 
