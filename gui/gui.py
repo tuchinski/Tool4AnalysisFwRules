@@ -80,6 +80,15 @@ class Application(Frame):
         self.canvasH, self.canvasW = cheight,cwidth
         self.cframe,self.canvas = self.createCanvas()
 
+        self.Switch_num = 0
+        self.Router_num = 0
+        self.Host_num = 0
+
+        self.prefixos = {
+            "Switch": "SW",
+            "Router": "R",
+            "Host"  : "H"
+        }
 
         self.createMenubar()
 
@@ -91,28 +100,27 @@ class Application(Frame):
         self.buttons = {}
         self.toolbar = self.createToolbar()
 
+
+        # Coloca o canvas e o toolbox na janela
         self.toolbar.grid( column=0, row=0, sticky='nsew')
         self.cframe.grid( column=1, row=0 )
         self.columnconfigure( 1, weight=1 )
         self.rowconfigure( 0, weight=1 )
         self.pack( expand=True, fill='both' )
 
-
-
-        print(self.buttons['Switch'])
         Wm.wm_protocol( self.top, name='WM_DELETE_WINDOW', func=self.quit )
 
     def quit( self ):
-        "Stop our network, if any, then quit."
+        # Fecha o programa
         Frame.quit( self )
 
     def canvasx( self, x_root ):
-        "Convert root x coordinate to canvas coordinate."
+        "Converte a coordenada x do root para x do canvas"
         c = self.canvas
         return c.canvasx( x_root ) - c.winfo_rootx()
 
     def canvasy( self, y_root ):
-        "Convert root y coordinate to canvas coordinate."
+        "Converte a coordenada x do root para y do canvas"
         c = self.canvas
         return c.canvasy( y_root ) - c.winfo_rooty()
 
@@ -120,7 +128,6 @@ class Application(Frame):
         toolbar = Frame(self)
 
         for tool in self.tools:
-            print("heyy")
             cmd_botao = lambda t=tool : self.ativaBotao(t)
             b = Button(toolbar, text=tool,command=cmd_botao)
             if tool in self.tools:
@@ -201,6 +208,39 @@ class Application(Frame):
     def releaseCanvas( self, event ):
         "Canvas mouse up handler."
         self.canvasHandle( 'release', event )
+
+    def clickRouter(self,event):
+        self.novoNode("Router", event)
+
+    def clickSwitch(self,event):
+        self.novoNode("Switch", event)
+
+    def clickHost(self,event):
+        self.novoNode("Host", event)
+
+    def novoNode(self,node,event):
+        # Add um novo nó no canvas
+        c = self.canvas
+        x = c.canvasx(event.x)
+        y = c.canvasy(event.y)
+
+        nomeNo = self.prefixos[node]
+
+        if node == "Switch":
+            self.Switch_num += 1
+            nomeNo += str(self.Switch_num)
+            print("Add Switch " + nomeNo)
+        elif node == "Host":
+            self.Host_num += 1
+            nomeNo += str(self.Host_num)
+            print("Add host " + nomeNo)
+        elif node == "Router":
+            self.Router_num += 1
+            nomeNo += str(self.Router_num)
+            print("Add router " + nomeNo)
+        print(x,y)
+
+
 
     def close(self):
         print("Application-Shutdown")
