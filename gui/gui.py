@@ -1,6 +1,7 @@
-from tkinter import Tk, Canvas, Frame, PhotoImage, Menu, Scrollbar, Button, BitmapImage, Label, Wm
-from PIL import ImageTk, Image
+from tkinter import (BitmapImage, Button, Canvas, Frame, Label, Menu,
+                     PhotoImage, Scrollbar, Tk, Wm)
 
+from PIL import Image, ImageTk
 
 
 APP_TITLE = "Teste Regras Firewall"
@@ -108,6 +109,8 @@ class Application(Frame):
         self.rowconfigure( 0, weight=1 )
         self.pack( expand=True, fill='both' )
 
+        self.nodeBindings = self.createNodeBindings()
+
         Wm.wm_protocol( self.top, name='WM_DELETE_WINDOW', func=self.quit )
 
     def quit( self ):
@@ -148,6 +151,26 @@ class Application(Frame):
         self.buttons[botao].configure(relief='sunken')
         self.ativo = botao
 
+    def createNodeBindings(self):
+        bindings = {
+            '<ButtonPress-1>': self.clickNode,
+            '<B1-Motion>': self.dragNode,
+            '<ButtonRelease-1>': self.releaseNode,
+            '<Enter>': self.enterNode,
+            '<Leave>': self.leaveNode
+        }
+
+        l = Label()
+        for event,binding in bindings.items():
+            l.bind(event,binding)
+        
+        return l
+
+    def clickNode(self,event):pass
+    def dragNode(self,event):pass
+    def releaseNode(self,event):pass
+    def enterNode(self,event):pass
+    def leaveNode(self,event):pass
 
 
     def createCanvas(self):
@@ -240,6 +263,16 @@ class Application(Frame):
             print("Add router " + nomeNo)
         print(x,y)
 
+        icone = self.nodeIcone(node,nomeNo)
+        item = self.canvas.create_window(x,y, anchor='c', window=icone, tags=node)
+
+    def nodeIcone(self,node,name):
+        icone = Button(self.canvas, image=self.imagens[node], text=name, compound='top')
+        bindtags = [str(self.nodeBindings)]
+        bindtags += list(icone.bindtags())
+
+        icone.bindtags(tuple(bindtags))
+        return icone
 
 
     def close(self):
