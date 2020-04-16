@@ -91,13 +91,22 @@ class Application(Frame):
             "Host"  : "H"
         }
 
+        self.ultimo = None
+
+        self.widgetToItem = {}
+        self.itemToWidget = {}
+
+        # Ultimo e penultimo item selecionado
+        self.ultimaSelecao = None
+        self.selecaoAtual = None
+
         self.createMenubar()
 
 
         # Toolbar -> barra lateral dos equipamentos
         self.ativo = None
         self.imagens = imagens()
-        self.tools = ('Switch','Host', 'Router')
+        self.tools = ('Select','Switch','Host', 'Router')
         self.buttons = {}
         self.toolbar = self.createToolbar()
 
@@ -166,11 +175,44 @@ class Application(Frame):
         
         return l
 
-    def clickNode(self,event):pass
-    def dragNode(self,event):pass
-    def releaseNode(self,event):pass
-    def enterNode(self,event):pass
-    def leaveNode(self,event):pass
+
+    def clickNode(self,event):
+        if self.ultimo != "drag":
+            print("drag")
+    
+    def dragNode(self,event):
+        if self.ativo == 'NetLink':
+            # Cria a ligação dos links
+            return
+        else:
+            self.arrastarNodeCanvas(event)
+    
+    def releaseNode(self,event):
+        if self.ultimo != "release":
+            print("release")
+            self.ultimo = 'release'
+    
+    def enterNode(self,event):
+        if self.ultimo != "enter":
+            print("enter")
+            self.ultimo = 'enter'
+    
+    def leaveNode(self,event):
+        if self.ultimo != "leave":
+            print("leave")
+            self.ultimo = 'leave'
+
+    def arrastarNodeCanvas(self,event):
+        c = self.canvas
+
+        x = self.canvasx(event.x_root)
+        y = self.canvasy(event.y_root)
+
+        item = self.widgetToItem[event.widget]
+
+        c.coords(item,x,y)
+        
+
 
 
     def createCanvas(self):
@@ -261,11 +303,15 @@ class Application(Frame):
             self.Router_num += 1
             nomeNo += str(self.Router_num)
             print("Add router " + nomeNo)
-        print(x,y)
 
         icone = self.nodeIcone(node,nomeNo)
         item = self.canvas.create_window(x,y, anchor='c', window=icone, tags=node)
+        self.selecionarItem(item)
+        self.widgetToItem[ icone ] = item
+        self.itemToWidget[ item ] = icone
+        icone.links = {}
 
+    # Cria um novo item para ser colocado no Canvas
     def nodeIcone(self,node,name):
         icone = Button(self.canvas, image=self.imagens[node], text=name, compound='top')
         bindtags = [str(self.nodeBindings)]
@@ -274,6 +320,10 @@ class Application(Frame):
         icone.bindtags(tuple(bindtags))
         return icone
 
+    # Seleciona o item e guarda a ultima seleção
+    def selecionarItem(self,item):
+        self.ultimaSelecao = self.selecaoAtual
+        self.selecaoAtual = item
 
     def close(self):
         print("Application-Shutdown")
