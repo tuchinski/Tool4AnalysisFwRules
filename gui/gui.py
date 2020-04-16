@@ -67,7 +67,7 @@ class Application(Frame):
     #   Popup para os hosts, sw, routers
     #   Criar tooltips para os botoes -> linha 99
 
-    def __init__(self,parent=None, cheight=500, cwidth=900):
+    def __init__(self,parent=None, cheight=900 , cwidth=1000):
         # self.master = master
         # self.master.protocol("WM_DELETE_WINDOW", self.close)
         Frame.__init__(self,parent)
@@ -106,7 +106,7 @@ class Application(Frame):
         # Toolbar -> barra lateral dos equipamentos
         self.ativo = None
         self.imagens = imagens()
-        self.tools = ('Select','Switch','Host', 'Router')
+        self.tools = ('Select','Switch','Host', 'Router','NetLink')
         self.buttons = {}
         self.toolbar = self.createToolbar()
 
@@ -119,6 +119,10 @@ class Application(Frame):
         self.pack( expand=True, fill='both' )
 
         self.nodeBindings = self.createNodeBindings()
+
+        # Bindings do teclado
+        self.bind( '<KeyPress-Delete>', self.excluiSelecao )
+        self.focus()
 
         Wm.wm_protocol( self.top, name='WM_DELETE_WINDOW', func=self.quit )
 
@@ -162,11 +166,12 @@ class Application(Frame):
 
     def createNodeBindings(self):
         bindings = {
+            '<Double-Button-1>': self.duploclick,
             '<ButtonPress-1>': self.clickNode,
             '<B1-Motion>': self.dragNode,
             '<ButtonRelease-1>': self.releaseNode,
             '<Enter>': self.enterNode,
-            '<Leave>': self.leaveNode
+            '<Leave>': self.leaveNode,
         }
 
         l = Label()
@@ -175,10 +180,13 @@ class Application(Frame):
         
         return l
 
+    def duploclick(self,event):
+        print(event)
+
 
     def clickNode(self,event):
-        if self.ultimo != "drag":
-            print("drag")
+        if self.ultimo != "click":
+            print("click")
     
     def dragNode(self,event):
         if self.ativo == 'NetLink':
@@ -194,13 +202,23 @@ class Application(Frame):
     
     def enterNode(self,event):
         if self.ultimo != "enter":
-            print("enter")
             self.ultimo = 'enter'
     
     def leaveNode(self,event):
         if self.ultimo != "leave":
-            print("leave")
             self.ultimo = 'leave'
+    
+    def excluiSelecao(self,_event):
+        if self.selecaoAtual != None:
+            self.excluiItem(self.selecaoAtual)
+
+    def excluiItem(self,item):
+        if item in self.itemToWidget:
+            widget = self.itemToWidget[item]
+            tags = self.canvas.gettags(item)
+            del self.itemToWidget[item]
+            del self.widgetToItem[widget]
+            self.canvas.delete(item)
 
     def arrastarNodeCanvas(self,event):
         c = self.canvas
@@ -211,8 +229,6 @@ class Application(Frame):
         item = self.widgetToItem[event.widget]
 
         c.coords(item,x,y)
-        
-
 
 
     def createCanvas(self):
@@ -339,9 +355,6 @@ class Application(Frame):
         fileMenu = Menu( mbar, tearoff=False )
         mbar.add_cascade( label="File", menu=fileMenu )
         fileMenu.add_command( label="New")
-        fileMenu.add_command( label="Open")
-        fileMenu.add_command( label="Save")
-        fileMenu.add_command( label="Export Level 2 Script")
         fileMenu.add_separator()
         fileMenu.add_command( label='Quit')
 
@@ -351,6 +364,7 @@ def imagens():
         'Switch': PhotoImage(file="{}sw.png".format(IMAGE_PATH)),
         'Host': PhotoImage(file="{}pc.png".format(IMAGE_PATH)),
         'Router': PhotoImage(file="{}router.png".format(IMAGE_PATH)),
+        'NetLink': PhotoImage(file="{}netlink.png".format(IMAGE_PATH)),
         'Select': BitmapImage(
             file='/usr/include/X11/bitmaps/left_ptr' ),
         
