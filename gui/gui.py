@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
+
 from tkinter import (BitmapImage, Button, Canvas, Frame, Label, Menu,
                      PhotoImage, Scrollbar, Tk, Wm)
 
 from PIL import Image, ImageTk
 
-
+## pesquisar interface
 APP_TITLE = "Teste Regras Firewall"
 APP_XPOS = 200
 APP_YPOS = 200
@@ -102,6 +104,11 @@ class Application(Frame):
 
         self.createMenubar()
 
+        # Links
+        self.link = self.linkWidget = None
+        self.linkx = self.linky = self.linkItem = None
+        self.links = {}
+
 
         # Toolbar -> barra lateral dos equipamentos
         self.ativo = None
@@ -153,8 +160,6 @@ class Application(Frame):
         self.ativaBotao(self.tools[0])
         return toolbar
                 
-
-    # Ativa o botão selecionado
     def ativaBotao(self,botao):
         # Se algum botão já foi selecionado, coloca o mesmo na posição "levantado"
         if self.ativo:
@@ -183,22 +188,135 @@ class Application(Frame):
     def duploclick(self,event):
         print(event)
 
+    def startLink(self,event):
+        # Caso não clique em um widget retorne 
+        if event.widget not in self.widgetToItem:
+            return
+        
+        w = event.widget
+        item = self.widgetToItem[w]
+
+        x,y = self.canvas.coords(item)
+
+        self.link = self.canvas.create_line(x,y,x,y,width=4,fill='blue', tag='link')
+        self.linkx = x
+        self.linky = y
+        self.linkWidget = w
+        self.linkItem = item
+
+    def dragNetLink(self,event):
+        # Permite que o link seja arrastado
+        if self.link is None:
+            return
+        x = self.canvasx(event.x_root)           
+        y = self.canvasy(event.y_root)
+
+        self.canvas.coords(self.link,self.linkx,self.linky,x,y)
+
+    def releaseNetLink(self,_event):
+        if self.link != None:
+            self.canvas.delete(self.link)
+        self.linkWidget = None
+        self.link = None
+        self.linkItem = None
+
+    def finishLink(self,event):
+        # Termina o link
+
+        #Retorna caso não exista link
+        if self.link == None:
+            return
+
+        # Pega o widget onde o link iniciou
+        source = self.linkWidget
+        c = self.canvas
+
+        # Retorna a posição X,Y clicada pelo user e verifica se existe um item
+        # no local clicado
+        x,y = self.canvasx(event.x_root),self.canvasy(event.y_root)
+        target = self.findItem(x,y)
+        dest = self.itemToWidget.get(target,None)
+
+        # Verifica se origem e destino não são vazios, se não são o msm widget
+        # ou se já existe um link entre o destino e origem
+        # print('Source ' + source)
+        # print('SourceLinks ' + source.links)
+        # print('dest ' + dest)
+        # print('destLinks ' + dest.links)
+
+        if( source is None or dest is None or source == dest or
+            dest in source.links or source in dest.links) :
+            self.releaseNetLink(event)
+            return
+
+        tags_origem = self.canvas.gettags(self.widgetToItem[source])
+        tags_destino = self.canvas.gettags(target)
+
+        # Não deixa o link entre 2 hosts
+        if("Host" in tags_origem and "Host" in tags_destino):
+            self.releaseNetLink(event)
+            return
+        
+        # Cria os bindings pro link
+        linkType = 'data'
+        self.createDataLinkBindings()
+        c.itemconfig(self.link, tags=c.gettags(self.link)+(linkType,))
+
+        x,y = c.coords(target)
+
+        c.coords(self.link, self.linkx,self.linky,x,y)
+        self.addLink(source,dest,linkType=linkType)
+        self.link = self.linkWidget = None
+
+    
+    def addLink(self,source,dest,linkType='data', linkopts=None):
+        if linkopts == None:
+            linkopts = {}
+        source.links[dest]   = self.link
+        dest.links[source] = self.link
+        self.links[self.link] = {
+            'type'     : linkType,
+            'src'      : source,
+            'dest'     : dest,
+            'linkopts' : linkopts
+        }
+    
+
+
+    # Cria os bindings para os links
+    def createDataLinkBindings(self):
+        def select(_event, link=self.link):
+            self.selecionarItem(link)
+
+        def highlight(_event, link=self.link):
+            self.selecionarItem( link )
+            self.canvas.itemconfig( link, fill='green' ) 
+
+        def unhighlight(_event, link=self.link):
+            self.canvas.itemconfig( link, fill='blue' ) 
+
+        self.canvas.tag_bind(self.link, '<Enter>', highlight)
+        self.canvas.tag_bind(self.link, '<Leave>', unhighlight)
+        self.canvas.tag_bind(self.link, '<ButtonPress-1>', select)
+        # self.canvas.tag_bind(self.link, '<Button-3>', highlight)
+
 
     def clickNode(self,event):
-        if self.ultimo != "click":
-            print("click")
+        if self.ativo == 'NetLink':
+            self.startLink(event)
+        else: 
+            self.selecionaNode(event)
     
     def dragNode(self,event):
         if self.ativo == 'NetLink':
             # Cria a ligação dos links
-            return
+            self.dragNetLink(event)
         else:
             self.arrastarNodeCanvas(event)
     
     def releaseNode(self,event):
-        if self.ultimo != "release":
-            print("release")
-            self.ultimo = 'release'
+        if self.ativo == 'NetLink':
+            self.finishLink(event)
     
     def enterNode(self,event):
         if self.ultimo != "enter":
@@ -213,13 +331,41 @@ class Application(Frame):
             self.excluiItem(self.selecaoAtual)
 
     def excluiItem(self,item):
-        if item in self.itemToWidget:
-            widget = self.itemToWidget[item]
-            tags = self.canvas.gettags(item)
-            del self.itemToWidget[item]
-            del self.widgetToItem[widget]
-            self.canvas.delete(item)
 
+        if item in self.links:
+            self.deleteLink(item)
+
+        if item in self.itemToWidget:
+            self.deleteNode(item)
+            
+        
+        self.canvas.delete(item)
+    
+    def deleteNode (self,item):
+        widget = self.itemToWidget[item]
+        tags = self.canvas.gettags(item)
+        
+        for link in list(widget.links.values()):
+            self.excluiItem(link)
+        del self.itemToWidget[item]
+        del self.widgetToItem[widget]
+
+    def deleteLink(self,link):
+        par = self.links.get(link,None)
+        if par:
+            origem = par['src']
+            destino = par['dest']
+            del origem.links[destino]
+            del destino.links[origem]
+        
+        if link:
+            del self.links[link]
+    
+    def selecionaNode(self,event):
+        item = self.widgetToItem.get(event.widget,None)
+        self.selecionarItem(item)
+
+    # Possibilita arrastar o nó no canvas
     def arrastarNodeCanvas(self,event):
         c = self.canvas
 
@@ -229,6 +375,23 @@ class Application(Frame):
         item = self.widgetToItem[event.widget]
 
         c.coords(item,x,y)
+
+        w = event.widget
+
+        for dest in w.links:
+            link = w.links[ dest ]
+            item = self.widgetToItem[ dest ]
+            x1, y1 = c.coords( item )
+            c.coords( link, x, y, x1, y1 )
+        # self.updateScrollRegion()
+
+    def findItem( self, x, y ):
+        "Find items at a location in our canvas."
+        items = self.canvas.find_overlapping( x, y, x, y )
+        if len( items ) == 0:
+            return None
+        else:
+            return items[ 0 ]
 
 
     def createCanvas(self):
