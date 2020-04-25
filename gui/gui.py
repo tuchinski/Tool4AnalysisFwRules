@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from tkinter import (BitmapImage, Button, Canvas, Frame, Label, Menu,
-                     PhotoImage, Scrollbar, Tk, Wm)
+from tkinter import BitmapImage, Button, Canvas, Entry, Frame, Label, Menu, PhotoImage, Scrollbar, Text, Tk, Toplevel, Wm
 
 from PIL import Image, ImageTk
+from tkinter.ttk import Notebook
 
 ## pesquisar interface
 APP_TITLE = "Teste Regras Firewall"
@@ -62,6 +62,102 @@ class CreateCanvasObject(object):
         print("release")
         self.move_flag = False
 
+class CustomDialog(object):
+    def __init__(self, master, _title):
+        self.top = Toplevel(master)
+
+        self.bodyFrame = Frame(self.top)
+        self.bodyFrame.grid(row=0, column=0, sticky='nswe')
+
+        self.body(self.bodyFrame)
+
+        buttonFrame = Frame(self.top, relief='ridge', bd=3, bg='lightgrey')
+        buttonFrame.grid(row=1,column=0, sticky='nswe')
+
+        okButton = Button(buttonFrame, width=8, text='OK', relief='groove', bd=4, command=self.okAction)
+        okButton.grid(row=0, column=0, sticky='E')
+
+        cancelButton = Button(buttonFrame, width=8, text='Cancelar', relief='groove', bd=4, command=self.okAction)
+        cancelButton.grid(row=0, column=1, sticky='W')
+    
+    def body(self,master):
+        self.rootFrame = master
+    
+    def apply(self):
+        self.top.destroy()
+
+    def okAction(self):
+        self.apply()
+        self.top.destroy()
+
+    def cancelAction(self):
+        self.top.destroy()
+
+
+class HostDialog(CustomDialog):
+    def __init__(self, master, title, prefDefaults):
+        self.prefDefaults = prefDefaults
+        self.result = None
+
+        CustomDialog.__init__(self,master,title)
+    
+    def body(self,master):
+        self.rootFrame = master
+        n = Notebook(self.rootFrame)
+        self.propertiesFrame = Frame(n)
+        self.firewallFrame = Frame(n)
+        self.commandsFrame = Frame(n)
+        n.add(self.propertiesFrame, text="Propriedades")
+        n.add(self.firewallFrame, text="Firewall")
+        n.add(self.commandsFrame, text="Comandos")
+        n.pack()
+
+        """ Aba 1: Propriedades """
+        # Hostname
+        Label(self.propertiesFrame, text="Hostname:").grid(row=0,sticky='E')
+        self.hostnameEntry = Entry(self.propertiesFrame, width=25)
+        self.hostnameEntry.grid(row=0, column=1)
+        if 'hostname' in self.prefDefaults:
+            self.hostnameEntry.insert(0,self.prefDefaults['hostname'])
+        
+        # Endereço IP
+        Label(self.propertiesFrame, text="Endereço IPV4:").grid(row=1,sticky="E")
+        self.ipAddr = Entry(self.propertiesFrame,width=25)
+        self.ipAddr.grid(row=1,column=1)
+        if 'ip' in self.prefDefaults:
+            self.ipAddr.insert(0, self.prefDefaults['mask'])
+
+        # Máscara de rede
+        Label(self.propertiesFrame, text="Máscara de rede:").grid(row=2,sticky="E")
+        self.mask = Entry(self.propertiesFrame, width=25)
+        self.mask.grid(row=2,column=1)
+        if 'mask' in self.prefDefaults:
+            self.mask.insert(0, self.prefDefaults['ip'])
+
+        # Rota Padrão
+        Label(self.propertiesFrame, text="Rota Padrão:").grid(row=3,sticky="E")
+        self.defaultGW = Entry(self.propertiesFrame, width=25)
+        self.defaultGW.grid(row=3,column=1)
+        if 'defaultRoute' in self.prefDefaults:
+            self.defaultGW.insert(0, self.prefDefaults['defaultRoute'])
+
+        
+        Label(self.commandsFrame, text="Comando Inicial:").grid(row=0,sticky="NE")
+        self.startCommand = Text(self.commandsFrame, height=5, width=28)
+        self.startCommand.grid(row=0,column=1)
+        if 'startCommand' in self.prefDefaults:
+            self.startCommand.insert(0, self.prefDefaults['startCommand'])
+    
+        Label(self.commandsFrame, text="Comando Final:").grid(row=1,sticky="NE")
+        self.finalCommand = Text(self.commandsFrame, height=5, width=28)
+        self.finalCommand.grid(row=1,column=1)
+        if 'finalCommand' in self.prefDefaults:
+            self.finalCommand.insert(0, self.prefDefaults['finalCommand'])
+    
+    def apply(self):
+        print("OK")
+        print(self.startCommand.get(1.0,"end-1c"))
+        
 
 class Application(Frame):
 
@@ -131,6 +227,11 @@ class Application(Frame):
         self.bind( '<KeyPress-Delete>', self.excluiSelecao )
         self.focus()
 
+        # Informações dos nodes
+        self.hostOpts = {}
+        self.switchOpts = {}
+        self.routerOpts = {}
+
         Wm.wm_protocol( self.top, name='WM_DELETE_WINDOW', func=self.quit )
 
     def quit( self ):
@@ -171,7 +272,7 @@ class Application(Frame):
 
     def createNodeBindings(self):
         bindings = {
-            '<Double-Button-1>': self.duploclick,
+            # '<Double-Button-1>': self.duploclick,
             '<ButtonPress-1>': self.clickNode,
             '<B1-Motion>': self.dragNode,
             '<ButtonRelease-1>': self.releaseNode,
@@ -478,6 +579,8 @@ class Application(Frame):
             self.Host_num += 1
             nomeNo += str(self.Host_num)
             print("Add host " + nomeNo)
+            self.hostOpts[nomeNo] = {'nodeNum':self.Host_num}
+            self.hostOpts[nomeNo]['hostname'] = nomeNo
         elif node == "Router":
             self.Router_num += 1
             nomeNo += str(self.Router_num)
@@ -489,6 +592,13 @@ class Application(Frame):
         self.widgetToItem[ icone ] = item
         self.itemToWidget[ item ] = icone
         icone.links = {}
+
+        if node == "Switch":
+            icone.bind('<Double-Button-1>',self.switchDetails)
+        elif node == "Router":
+            icone.bind('<Double-Button-1>',self.routerDetails)
+        elif node == "Host":
+            icone.bind('<Double-Button-1>',self.hostDetails)
 
     # Cria um novo item para ser colocado no Canvas
     def nodeIcone(self,node,name):
@@ -520,6 +630,28 @@ class Application(Frame):
         fileMenu.add_command( label="New")
         fileMenu.add_separator()
         fileMenu.add_command( label='Quit')
+    
+    def hostDetails(self,event):
+        # if( self.selecaoAtual == None or
+        #     self.selecaoAtual not in self.itemToWidget):
+        #     return
+        widget = self.itemToWidget[self.selecaoAtual]
+        name = widget['text']
+        tags = self.canvas.gettags(self.selecaoAtual)
+        # print (name)
+        # print (tags)
+        prefDefaults = self.hostOpts[name]
+        # print(prefDefaults)
+        hostBox = HostDialog(self, title='Detalhes Host ' + name, prefDefaults=prefDefaults)
+        self.master.wait_window(hostBox.top)
+
+    def switchDetails(self,event):
+        print("Propriedades SW")
+        
+    
+    def routerDetails(self,event):
+        print("Propriedades Router")
+        
 
 
 def imagens():
