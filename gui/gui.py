@@ -15,52 +15,7 @@ APP_HEIGHT = 200
 IMAGE_PATH = "images/"
 
 
-class CreateCanvasObject(object):
 
-    # Coloca a imagem no Canvas
-    def __init__(self, canvas, image_name, xpos, ypos):
-        self.canvas = canvas
-        self.image_name = image_name
-        self.xpos, self.ypos = xpos, ypos
-
-        self.tk_image = PhotoImage(file="{}{}".format(IMAGE_PATH, image_name))
-
-    
-        self.icone = Button(self.canvas, image=self.tk_image,text="Texto", compound='top')
-        self.icone.bind('<Button1-Motion>',self.move)
-        self.icone.bind('<ButtonRelease-1>',self.release)
-        
-        # bindtags
-
-        self.item = self.canvas.create_window(200,100,anchor='c', window=self.icone)
-
-        # self.image_obj = canvas.create_image(xpos, ypos, image=self.tk_image)
-
-        # canvas.tag_bind(self.icone, '<Button1-Motion>', self.move)
-        # canvas.tag_bind(self.icone, '<ButtonRelease-1>', self.release)
-
-        self.move_flag = False
-
-    # Faz a imagem se mover
-    def move(self, event):
-        print("Move")
-        if self.move_flag:
-            new_xpos, new_ypos = event.x, event.y
-
-            self.canvas.move(self.item, new_xpos -
-                             self.mouse_xpos, new_ypos-self.mouse_ypos)
-
-            self.mouse_xpos = new_xpos
-            self.mouse_ypos = new_ypos
-        else:
-            self.move_flag = True
-            self.canvas.tag_raise(self.item)
-            self.mouse_xpos = event.x
-            self.mouse_ypos = event.y
-
-    def release(self, event):
-        print("release")
-        self.move_flag = False
 
 class CustomDialog(object):
     def __init__(self, master, _title):
@@ -93,6 +48,23 @@ class CustomDialog(object):
     def cancelAction(self):
         self.top.destroy()
 
+class RouterDialog(CustomDialog):
+    def __init__(self, master,title,prefDefaults,links):
+        self.prefDefaults = prefDefaults
+        self.result = None
+        self.links = links
+
+        CustomDialog.__init__(self,master,title)
+    
+    
+    def body(self, master):
+        self.rootFrame = master
+        n = Notebook(self.rootFrame)
+        self.netPropertiesFrame = Frame(n)
+        self.firewallFrame = Frame(n)
+        n.add(self.netPropertiesFrame, text="Propriedades Rede")
+        n.add(self.firewallFrame, text="Firewall")
+        n.pack()
 
 class HostDialog(CustomDialog):
     def __init__(self, master, title, prefDefaults):
@@ -142,21 +114,37 @@ class HostDialog(CustomDialog):
             self.defaultGW.insert(0, self.prefDefaults['defaultRoute'])
 
         
+        """ Aba 3: Comandos"""
+        # Comando inicial
         Label(self.commandsFrame, text="Comando Inicial:").grid(row=0,sticky="NE")
         self.startCommand = Text(self.commandsFrame, height=5, width=28)
         self.startCommand.grid(row=0,column=1)
         if 'startCommand' in self.prefDefaults:
-            self.startCommand.insert(0, self.prefDefaults['startCommand'])
+            self.startCommand.insert(1.0, self.prefDefaults['startCommand'])
     
+        # Comando final
         Label(self.commandsFrame, text="Comando Final:").grid(row=1,sticky="NE")
         self.finalCommand = Text(self.commandsFrame, height=5, width=28)
         self.finalCommand.grid(row=1,column=1)
         if 'finalCommand' in self.prefDefaults:
-            self.finalCommand.insert(0, self.prefDefaults['finalCommand'])
+            self.finalCommand.insert(1.0, self.prefDefaults['finalCommand'])
     
     def apply(self):
         print("OK")
-        print(self.startCommand.get(1.0,"end-1c"))
+        # print(self.startCommand.get(1.0,"end-1c"))
+        results = {
+            'hostname'      : self.hostnameEntry.get(),
+            'ip'            : self.ipAddr.get(),
+            'mask'          : self.mask.get(),
+            'defaultRoute'  : self.defaultGW.get(),
+            "startCommand"  : self.startCommand.get(1.0,"end-1c"),
+            "finalCommand"  : self.finalCommand.get(1.0,"end-1c")
+        }
+        self.result = results
+
+    def cancelAction(self):
+        print("fdfsdfdfsd")
+        result = None
         
 
 class Application(Frame):
@@ -340,10 +328,6 @@ class Application(Frame):
 
         # Verifica se origem e destino não são vazios, se não são o msm widget
         # ou se já existe um link entre o destino e origem
-        # print('Source ' + source)
-        # print('SourceLinks ' + source.links)
-        # print('dest ' + dest)
-        # print('destLinks ' + dest.links)
 
         if( source is None or dest is None or source == dest or
             dest in source.links or source in dest.links) :
@@ -584,6 +568,8 @@ class Application(Frame):
         elif node == "Router":
             self.Router_num += 1
             nomeNo += str(self.Router_num)
+            self.routerOpts[nomeNo] = {'nodeNum': self.Router_num}
+            self.routerOpts[nomeNo]['hostname'] = nomeNo
             print("Add router " + nomeNo)
 
         icone = self.nodeIcone(node,nomeNo)
@@ -635,22 +621,52 @@ class Application(Frame):
         # if( self.selecaoAtual == None or
         #     self.selecaoAtual not in self.itemToWidget):
         #     return
-        widget = self.itemToWidget[self.selecaoAtual]
+        widget = self.itemToWidget.get(self.selecaoAtual,None)
+        if widget == None:
+            return
         name = widget['text']
         tags = self.canvas.gettags(self.selecaoAtual)
-        # print (name)
-        # print (tags)
+        if 'Host' not in tags:
+            return
         prefDefaults = self.hostOpts[name]
-        # print(prefDefaults)
+        
         hostBox = HostDialog(self, title='Detalhes Host ' + name, prefDefaults=prefDefaults)
         self.master.wait_window(hostBox.top)
+        
+        if hostBox.result:
+            print(hostBox.result)
+            newName = hostBox.result['hostname']
+            widget['text'] = newName
+            self.hostOpts[newName] = hostBox.result
+            if newName != name:
+                del self.hostOpts[name]
 
-    def switchDetails(self,event):
-        print("Propriedades SW")
+    def routerDetails(self,event):
+        # if self.selecaoAtual not in self.itemToWidget:
+        #     return
+        widget = self.itemToWidget.get(self.selecaoAtual,None)
+        if widget == None:
+            return
+        name = widget['text']
+        tags = self.canvas.gettags(self.selecaoAtual)
+        if 'Router' not in tags:
+            return
+        prefDefaults = self.routerOpts[name]
+        links = []
+        for link in list(widget.links):
+            nome = link['text']
+            links.append(nome)
+        routerBox = RouterDialog(self,title='Detalhes Router ' + name, prefDefaults=prefDefaults,links=links)
+        
+            
+
+
+        # print(widget,name,tags, prefDefaults)
+        
         
     
-    def routerDetails(self,event):
-        print("Propriedades Router")
+    def switchDetails(self,event):
+        print("Propriedades SW")
         
 
 
