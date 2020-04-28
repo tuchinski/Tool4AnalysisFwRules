@@ -497,20 +497,9 @@ class Application(Frame):
         if par:
             if 'Router' in tagsSrc:
                 self.deleteLinkRouter(par['src'],par['dest'])
-                # routerName = par['src']['text']
-                # hostName = par['dest']['text']
-                # if hostName in self.routerOpts[routerName]['links']:
-                #     del self.routerOpts[routerName]['links'][hostName]
-                # print(self.routerOpts[routerName])
 
             if 'Router' in tagsDest:
                 self.deleteLinkRouter(par['dest'],par['src'])
-                # routerName = par['dest']['text']
-                # hostName = par['src']['text']
-                # if hostName in self.routerOpts[routerName]['links']:
-                #     del self.routerOpts[routerName]['links'][hostName]
-                # print(self.routerOpts[routerName])
-
 
             # if 'Host' in tagsSrc:
             #     print('hostSrc')
