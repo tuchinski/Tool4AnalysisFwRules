@@ -66,6 +66,49 @@ class RouterDialog(CustomDialog):
         n.add(self.firewallFrame, text="Firewall")
         n.pack()
 
+        """ Aba 1: Propriedades """
+        Label(self.netPropertiesFrame, text='Nome Roteador:').grid(row=0,sticky='E')
+        self.hostname = Entry(self.netPropertiesFrame, width=25)
+        self.hostname.grid(row=0,column=1)
+        if 'hostname' in self.prefDefaults:
+            self.hostname.insert(0,self.prefDefaults['hostname'])
+        print(self.prefDefaults)
+
+        self.confLinks = {}
+        i = 1
+        for link in self.links:
+            self.confLinks[link] = {}
+            Label(self.netPropertiesFrame, text="IP iface {}:".format(link)).grid(row=i,sticky='E')
+            self.confLinks[link]['ip'] = Entry(self.netPropertiesFrame,width=25) 
+            self.confLinks[link]['ip'].grid(row=i,column=1)
+            if 'links' in self.prefDefaults and link in self.prefDefaults['links']:
+                self.confLinks[link]['ip'].insert(0,self.prefDefaults['links'][link]['ip'])
+            i+=1
+
+            Label(self.netPropertiesFrame, text="Máscara iface {}:".format(link)).grid(row=i,sticky='E')
+            self.confLinks[link]['mask'] = Entry(self.netPropertiesFrame,width=25) 
+            self.confLinks[link]['mask'].grid(row=i,column=1)
+            if 'links' in self.prefDefaults and link in self.prefDefaults['links']:
+                self.confLinks[link]['mask'].insert(0,self.prefDefaults['links'][link]['mask'])
+            i+=1
+            
+            # Espaço em branco
+            Label(self.netPropertiesFrame, text="  ").grid(row=i,sticky='E')
+            i+=1
+        
+
+        """ Aba 2: Firewall """
+        
+    def apply(self):
+        self.result = {'hostname': self.hostname.get()}
+
+        self.result['links'] = {}
+        for link in self.confLinks:
+            self.result['links'][link] = {}
+            self.result['links'][link]['ip'] = self.confLinks[link]['ip'].get()
+            self.result['links'][link]['mask'] = self.confLinks[link]['mask'].get()
+
+
 class HostDialog(CustomDialog):
     def __init__(self, master, title, prefDefaults):
         self.prefDefaults = prefDefaults
@@ -213,6 +256,7 @@ class Application(Frame):
 
         # Bindings do teclado
         self.bind( '<KeyPress-Delete>', self.excluiSelecao )
+        self.bind( '<Control-q>', lambda event: self.quit() )
         self.focus()
 
         # Informações dos nodes
@@ -435,9 +479,44 @@ class Application(Frame):
         del self.itemToWidget[item]
         del self.widgetToItem[widget]
 
+    def deleteLinkRouter(self,src,dest):
+        routerName = src['text']
+        hostName = dest['text']
+        if hostName in self.routerOpts[routerName]['links']:
+            del self.routerOpts[routerName]['links'][hostName]
+        print(self.routerOpts[routerName])
+
     def deleteLink(self,link):
         par = self.links.get(link,None)
+        itemSrc = self.widgetToItem[par['src']]
+        itemDest = self.widgetToItem[par['dest']]
+        tagsSrc = self.canvas.gettags(itemSrc)
+        tagsDest = self.canvas.gettags(itemDest)
+        print(par['src'])
+        print (tagsSrc,tagsDest)
         if par:
+            if 'Router' in tagsSrc:
+                self.deleteLinkRouter(par['src'],par['dest'])
+                # routerName = par['src']['text']
+                # hostName = par['dest']['text']
+                # if hostName in self.routerOpts[routerName]['links']:
+                #     del self.routerOpts[routerName]['links'][hostName]
+                # print(self.routerOpts[routerName])
+
+            if 'Router' in tagsDest:
+                self.deleteLinkRouter(par['dest'],par['src'])
+                # routerName = par['dest']['text']
+                # hostName = par['src']['text']
+                # if hostName in self.routerOpts[routerName]['links']:
+                #     del self.routerOpts[routerName]['links'][hostName]
+                # print(self.routerOpts[routerName])
+
+
+            # if 'Host' in tagsSrc:
+            #     print('hostSrc')
+            # if 'Host' in tagsDest:
+            #     print('hostDest')
+            #PRECISO REMOVER NO ROUTEROPTS
             origem = par['src']
             destino = par['dest']
             del origem.links[destino]
@@ -570,6 +649,7 @@ class Application(Frame):
             nomeNo += str(self.Router_num)
             self.routerOpts[nomeNo] = {'nodeNum': self.Router_num}
             self.routerOpts[nomeNo]['hostname'] = nomeNo
+            self.routerOpts[nomeNo]['links'] = {}
             print("Add router " + nomeNo)
 
         icone = self.nodeIcone(node,nomeNo)
@@ -657,7 +737,15 @@ class Application(Frame):
             nome = link['text']
             links.append(nome)
         routerBox = RouterDialog(self,title='Detalhes Router ' + name, prefDefaults=prefDefaults,links=links)
+        self.master.wait_window(routerBox.top)
         
+        if routerBox.result:
+            print(routerBox.result)
+            newName = routerBox.result['hostname']
+            widget['text'] = newName
+            self.routerOpts[newName] = routerBox.result
+            if newName != name:
+                del self.routerOpts[name]
             
 
 
