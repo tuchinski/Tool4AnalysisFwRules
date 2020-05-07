@@ -4,6 +4,7 @@ from tkinter import BitmapImage, Button, Canvas, Entry, Frame, Label, Menu, Phot
 
 from PIL import Image, ImageTk
 from tkinter.ttk import Notebook
+import json
 
 ## pesquisar interface
 APP_TITLE = "Teste Regras Firewall"
@@ -34,6 +35,7 @@ class CustomDialog(object):
 
         cancelButton = Button(buttonFrame, width=8, text='Cancelar', relief='groove', bd=4, command=self.okAction)
         cancelButton.grid(row=0, column=1, sticky='W')
+        self.countRule = 1
     
     def body(self,master):
         self.rootFrame = master
@@ -62,8 +64,10 @@ class RouterDialog(CustomDialog):
         n = Notebook(self.rootFrame)
         self.netPropertiesFrame = Frame(n)
         self.firewallFrame = Frame(n)
+        self.testFrame = Frame(n)
         n.add(self.netPropertiesFrame, text="Propriedades Rede")
         n.add(self.firewallFrame, text="Firewall")
+        n.add(self.testFrame, text="Testes")
         n.pack()
 
         """ Aba 1: Propriedades """
@@ -72,10 +76,16 @@ class RouterDialog(CustomDialog):
         self.hostname.grid(row=0,column=1)
         if 'hostname' in self.prefDefaults:
             self.hostname.insert(0,self.prefDefaults['hostname'])
-        print(self.prefDefaults)
+        
+        Label(self.netPropertiesFrame, text='DNS:').grid(row=1,sticky='E')
+        self.dns = Entry(self.netPropertiesFrame, width=25)
+        self.dns.grid(row=1,column=1)
+        if 'dns' in self.prefDefaults:
+            self.dns.insert(0,self.prefDefaults['dns'])
+        # print(self.prefDefaults)
 
         self.confLinks = {}
-        i = 1
+        i = 2
         for link in self.links:
             self.confLinks[link] = {}
             Label(self.netPropertiesFrame, text="IP iface {}:".format(link)).grid(row=i,sticky='E')
@@ -91,22 +101,52 @@ class RouterDialog(CustomDialog):
             if 'links' in self.prefDefaults and link in self.prefDefaults['links']:
                 self.confLinks[link]['mask'].insert(0,self.prefDefaults['links'][link]['mask'])
             i+=1
+
+            Label(self.netPropertiesFrame, text="Gateway iface {}:".format(link)).grid(row=i,sticky='E')
+            self.confLinks[link]['gw'] = Entry(self.netPropertiesFrame,width=25) 
+            self.confLinks[link]['gw'].grid(row=i,column=1)
+            if 'links' in self.prefDefaults and link in self.prefDefaults['links']:
+                self.confLinks[link]['gw'].insert(0,self.prefDefaults['links'][link]['gw'])
+            i+=1
             
             # Espaço em branco
             Label(self.netPropertiesFrame, text="  ").grid(row=i,sticky='E')
             i+=1
         
-
         """ Aba 2: Firewall """
-        
+
+        Label(self.firewallFrame, text="Regras (1 regra por linha):").grid(row=0,sticky="NE")
+        self.rules = Text(self.firewallFrame, height=5, width=28)
+        self.rules.grid(row=1,column=0)
+        if 'rules' in self.prefDefaults:
+            self.rules.insert(1.0, self.prefDefaults['rules'])
+            
+
+
+    #     addNewRuleButton = Button(self.firewallFrame, text='Adicionar nova regra', command=self.addNewRuleField)
+    #     addNewRuleButton.grid()
+    #     self.ruleEntries = []
+
+
+    # def addNewRuleField(self):
+    #     Label(self.firewallFrame, text='Regra ' + str(self.countRule)).grid(row=self.countRule,sticky='W')
+    #     self.ruleEntries.append(Entry(self.firewallFrame, width=25))
+    #     self.ruleEntries[-1].grid(row=self.countRule,column=1)
+    #     self.countRule += 1
+
+    #     print("Add nova regra")
+
+
     def apply(self):
         self.result = {'hostname': self.hostname.get()}
-
+        self.result['dns'] = self.dns.get()
         self.result['links'] = {}
         for link in self.confLinks:
             self.result['links'][link] = {}
             self.result['links'][link]['ip'] = self.confLinks[link]['ip'].get()
             self.result['links'][link]['mask'] = self.confLinks[link]['mask'].get()
+            self.result['links'][link]['gw'] = self.confLinks[link]['gw'].get()
+        self.result['rules'] = self.rules.get(1.0,"end-1c")
 
 
 class HostDialog(CustomDialog):
@@ -189,7 +229,6 @@ class HostDialog(CustomDialog):
         print("fdfsdfdfsd")
         result = None
         
-
 class Application(Frame):
 
     # NOTAS: 
@@ -240,7 +279,7 @@ class Application(Frame):
         # Toolbar -> barra lateral dos equipamentos
         self.ativo = None
         self.imagens = imagens()
-        self.tools = ('Select','Switch','Host', 'Router','NetLink')
+        self.tools = ('Select','Switch','Host', 'Router','NetLink', "Start", "Stop")
         self.buttons = {}
         self.toolbar = self.createToolbar()
 
@@ -301,6 +340,49 @@ class Application(Frame):
         # "Afunda" ou "clica o botão selecionado"
         self.buttons[botao].configure(relief='sunken')
         self.ativo = botao
+        if botao == 'Start':
+            self.startScenario()
+        if botao == "Stop":
+            self.stopScenario()
+        
+        
+
+    def startScenario(self):
+        topology = {
+            'scene':{
+                'hosts':[],
+                'links':[]
+            },
+            'test' :[]
+        }
+        for widget in self.widgetToItem:
+            name = widget['text']
+            tags = self.canvas.gettags(self.widgetToItem[widget])
+            if 'Router' in tags:
+                opts = self.routerOpts[name]
+                host = {}
+                host['type'] = "router"
+                host['label'] = name
+                host['dns'] = opts['dns']
+                host['iface'] = []
+                rules = opts['rules'].split('\n')
+                host['rules'] = rules
+                for link in opts['links']:
+                    # print (opts['links'][link])
+                    interface = {}
+                    interface['ip'] = opts['links'][link].get('ip','')
+                    interface['mask'] = opts['links'][link].get('mask','')
+                    interface['gw'] = opts['links'][link].get('gw','')
+                    host['iface'].append(interface)
+                topology['scene']['hosts'].append(host)
+
+            elif 'Host' in tags:
+                opts = self.hostOpts[name]
+        print(json.dumps(topology))
+
+    def stopScenario(self):
+        print("Parando cenário")
+        
 
     def createNodeBindings(self):
         bindings = {
@@ -638,7 +720,9 @@ class Application(Frame):
             nomeNo += str(self.Router_num)
             self.routerOpts[nomeNo] = {'nodeNum': self.Router_num}
             self.routerOpts[nomeNo]['hostname'] = nomeNo
+            self.routerOpts[nomeNo]['dns'] = ''
             self.routerOpts[nomeNo]['links'] = {}
+            self.routerOpts[nomeNo]['rules'] = ''
             print("Add router " + nomeNo)
 
         icone = self.nodeIcone(node,nomeNo)
@@ -746,26 +830,21 @@ class Application(Frame):
         print("Propriedades SW")
         
 
-
 def imagens():
     return {
         'Switch': PhotoImage(file="{}sw.png".format(IMAGE_PATH)),
         'Host': PhotoImage(file="{}pc.png".format(IMAGE_PATH)),
         'Router': PhotoImage(file="{}router.png".format(IMAGE_PATH)),
         'NetLink': PhotoImage(file="{}netlink.png".format(IMAGE_PATH)),
+        'Start': PhotoImage(file="{}play.png".format(IMAGE_PATH)),
+        'Stop': PhotoImage(file="{}stop.png".format(IMAGE_PATH)),
         'Select': BitmapImage(
             file='/usr/include/X11/bitmaps/left_ptr' ),
         
     }
 
 def main():
-    # app_win = Tk()
-    # app_win.title(APP_TITLE)
-    # app_win.geometry("+{}+{}".format(APP_XPOS, APP_YPOS))
 
-    # app = Application(app_win).pack(fill='both', expand=True)
-
-    # app_win.mainloop()
     app = Application()
     app.mainloop()
 
