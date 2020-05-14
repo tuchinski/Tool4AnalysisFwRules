@@ -12,6 +12,7 @@ import os
 import json
 import time
 import timeit
+import sys
 
 
 listHosts = []		# Lista de hosts (node)
@@ -166,8 +167,8 @@ class Tests:
 
 
 
-def readJsonFile():
-	with open('cenario_teste.json') as f:
+def readJsonFile(arquivo):
+	with open(arquivo) as f:
 		data = json.load(f)
 	
 	return data
@@ -209,9 +210,9 @@ def createIface(ifaces, label):
 	
 def createSwitch(data):
 	for i in range(0, len(data)):
-		label = data[i]["label"]
-
-		listSwitch.append(Switch(label))
+		label = data[i].get('label','')
+		if label != '':
+			listSwitch.append(Switch(label))
 
 
 
@@ -443,42 +444,42 @@ def result(test):
 	if(test.protocol == "tcp"):
 		if(test.expected == "accept"):
 			if(handshake == True):
-				info("\nTeste APROVADO - os pacotes chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 			else:
-				info("\nTeste REPROVADO - os pacotes não chegaram ao destino")
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes não chegaram ao destino \033[1;37;40m")
 
 		if(test.expected == "deny"):
 			if(handshake == True):
-				info("\nTeste REPROVADO - os pacotes chegaram ao destino")			
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes chegaram ao destino \033[1;37;40m")			
 			else:
-				info("\nTeste APROVADO - os pacotes não chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 
 					
 	elif(test.protocol == "icmp"):
 		if(test.expected == "accept"):
 			if(contadorICMP > 0):
-				info("\nTeste APROVADO - os pacotes chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 			else:
-				info("\nTeste REPROVADO - os pacotes NÃO chegaram ao destino")
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes NÃO chegaram ao destino \033[1;37;40m")
 
 		elif(test.expected == "deny"):
 			if(contadorICMP == 0):
-				info("\nTeste APROVADO - os pacotes NÃO chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 			else:
-				info("\nTeste REPROVADO - os pacotes chegaram ao destino")
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes chegaram ao destino \033[1;37;40m")
 
 	else:
 		if(test.expected == "accept"):
 			if(datagram == True):
-				info("\nTeste \e[32mAPROVADO - os pacotes chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 			else:
-				info("\nTeste \e[31mREPROVADO - os pacotes não chegaram ao destino")
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes não chegaram ao destino \033[1;37;40m")
 
 		if(test.expected == "deny"):
 			if(datagram == True):
-				info("\nTeste \e[31mREPROVADO - os pacotes chegaram ao destino")			
+				info("\n\033[1;30;41m Teste REPROVADO - os pacotes chegaram ao destino \033[1;37;40m")			
 			else:
-				info("\nTeste \e[32mAPROVADO - os pacotes não chegaram ao destino")
+				info("\n\033[1;30;42m Teste  APROVADO  - os pacotes chegaram ao destino \033[1;37;40m")
 
 
 	f.close()
@@ -548,7 +549,7 @@ def emptyNet():
 	exit()
 
 
-data = readJsonFile()
+data = readJsonFile(sys.argv[1])
 createObjects(data["scene"])
 createTests(data["test"])
 
@@ -557,3 +558,4 @@ emptyNet()
 
 
 ## Não estamos pensando em executar serviços de rede, tal como ftp
+
