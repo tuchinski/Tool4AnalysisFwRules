@@ -351,6 +351,7 @@ class Application(Frame):
         topology = {
             'scene':{
                 'hosts':[],
+                'switchs':[],
                 'links':[]
             },
             'test' :[]
@@ -378,6 +379,35 @@ class Application(Frame):
 
             elif 'Host' in tags:
                 opts = self.hostOpts[name]
+                host = {}
+                host['type'] = 'host'
+                host['label'] = name
+                host['dns'] = opts.get('dns','')
+                host['iface'] = []
+                host['startCommand'] = opts.get('startCommand','')
+                host['finalCommand'] = opts.get('finalCommand','')
+                host['iface'].append({
+                    'ip': opts.get('ip',''),
+                    'mask': opts.get('mask',''),
+                    'gw': opts.get('gw','')
+                })
+                topology['scene']['hosts'].append(host)
+
+            elif 'Switch'in tags:
+                topology['scene']['switchs'].append({
+                    'label': name
+                })
+
+
+        for link in self.links:
+            source_link = self.links[link]['src']['text']
+            dest_link = self.links[link]['dest']['text']
+            link = {
+                'label': "{}_{}".format(source_link,dest_link),
+                'to': source_link,
+                'from': dest_link 
+            }
+            topology['scene']['links'].append(link)
         print(json.dumps(topology))
 
     def stopScenario(self):
