@@ -210,9 +210,9 @@ def createIface(ifaces, label):
 	
 def createSwitch(data):
 	for i in range(0, len(data)):
-		label = data[i]["label"]
-
-		listSwitch.append(Switch(label))
+		label = data[i].get('label','')
+		if label != '':
+			listSwitch.append(Switch(label))
 
 
 
@@ -558,3 +558,4 @@ emptyNet()
 
 
 ## Não estamos pensando em executar serviços de rede, tal como ftp
+
