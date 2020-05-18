@@ -2,7 +2,7 @@
 
 from tkinter import BitmapImage, Button, Canvas, Entry, Frame, Label, Menu, PhotoImage, Scrollbar, Text, Tk, Toplevel, Wm
 
-from PIL import Image, ImageTk
+from PIL import Image
 from tkinter.ttk import Notebook
 import json
 
@@ -409,6 +409,8 @@ class Application(Frame):
             }
             topology['scene']['links'].append(link)
         print(json.dumps(topology))
+        arq = open("cenario","w")
+        arq.write(json.dumps(topology))
 
     def stopScenario(self):
         print("Parando cenário")
