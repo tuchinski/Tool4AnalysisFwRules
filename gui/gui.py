@@ -2,9 +2,11 @@
 
 from tkinter import BitmapImage, Button, Canvas, Entry, Frame, Label, Menu, PhotoImage, Scrollbar, Text, Tk, Toplevel, Wm
 
+from tkinter import filedialog as tkFileDialog
 from PIL import Image
 from tkinter.ttk import Notebook
 import json
+import os
 
 ## pesquisar interface
 APP_TITLE = "Teste Regras Firewall"
@@ -411,6 +413,8 @@ class Application(Frame):
         print(json.dumps(topology))
         arq = open("cenario","w")
         arq.write(json.dumps(topology))
+        arq.close()
+        os.system("python ../src/customTopo.py cenario")
 
     def stopScenario(self):
         print("Parando cenário")
@@ -799,6 +803,7 @@ class Application(Frame):
         fileMenu = Menu( mbar, tearoff=False )
         mbar.add_cascade( label="File", menu=fileMenu )
         fileMenu.add_command( label="New")
+        fileMenu.add_command( label="Save Topology", command=self.saveTopology)
         fileMenu.add_separator()
         fileMenu.add_command( label='Quit')
     
@@ -860,6 +865,77 @@ class Application(Frame):
     
     def switchDetails(self,event):
         print("Propriedades SW")
+    
+    def saveTopology(self):
+        formats = [
+            ('Mininet Topology','*.mn'),
+            ('All Files','*'),
+        ]
+
+        topology = {}
+        hosts = []
+        switchs = []
+        routers = []
+        fileName = tkFileDialog.asksaveasfilename(filetypes=formats ,title="Save the topology as...")
+
+        # Salvando os hosts
+        for widget in self.widgetToItem:
+            name = widget['text']
+            tags = self.canvas.gettags(self.widgetToItem[widget])
+            x1,y1 = self.canvas.coords(self.widgetToItem[widget])
+            if "Switch" in tags:
+                nodeToSave = {
+                    'x': str(x1),
+                    'y': str(y1),
+                    'name': name
+                }
+                switchs.append(nodeToSave)
+            elif "Host" in tags:
+                # nodeNum = self.hostOpts[name]['nodeNum']
+                nodeToSave = {
+                                  'x':str(x1),
+                                  'y':str(y1),
+                                  'opts':self.hostOpts[name] }
+                hosts.append(nodeToSave)
+
+            elif "Router" in tags:
+                # nodeNum = self.routerOpts[name]['nodeNum']
+                nodeToSave = {
+                                  'x':str(x1),
+                                  'y':str(y1),
+                                  'opts':self.routerOpts[name] }
+                routers.append(nodeToSave)
+
+        topology['hosts'] = hosts    
+        topology['switchs'] = switchs    
+        topology['routers'] = routers    
+
+        # Salvando os links 
+        links = []
+        for link in self.links.values():
+            src = link['src']
+            dest = link['dest']
+
+            srcName, dstName = src[ 'text' ], dest[ 'text' ]
+
+            linkToSave = {'src':srcName,
+                          'dest':dstName,
+                        }
+            if link['type'] == 'data':
+                links.append(linkToSave)
+
+        topology['links'] = links
+        
+        try:
+            f = open(fileName,'w')
+            f.write(json.dumps(topology, sort_keys=True, indent=4, separators=(',', ': ')))
+        except Exception as error:
+            print(error)
+        finally:
+            f.close()
+
+        # print(json.dumps(topology))
+            
         
 
 def imagens():
