@@ -331,7 +331,7 @@ class Application(Frame):
             cmd_botao = lambda t=tool : self.ativaBotao(t)
             b = Button(toolbar, text=tool,command=cmd_botao)
             if tool in self.tools:
-                b.config(height=75, image=self.imagens[tool])
+                b.config(height=75, width=100, image=self.imagens[tool])
             b.pack()
             self.buttons[tool] = b
         self.ativaBotao(self.tools[0])
@@ -818,7 +818,7 @@ class Application(Frame):
         fileMenu.add_command( label="Load Topology", command=self.loadTopology)
         fileMenu.add_command( label="Save Topology", command=self.saveTopology)
         fileMenu.add_separator()
-        fileMenu.add_command( label='Quit')
+        fileMenu.add_command( label='Quit',command=self.quit)
     
     def hostDetails(self,event):
         # if( self.selecaoAtual == None or
