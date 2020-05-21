@@ -168,6 +168,9 @@ class HostDialog(CustomDialog):
         n.add(self.firewallFrame, text="Firewall")
         n.add(self.commandsFrame, text="Comandos")
         n.pack()
+        print("@@@@@@@@@@@@@@@@@@@")
+        print(self.prefDefaults)
+        print("@@@@@@@@@@@@@@@@@@@")
 
         """ Aba 1: Propriedades """
         # Hostname
@@ -182,14 +185,14 @@ class HostDialog(CustomDialog):
         self.ipAddr = Entry(self.propertiesFrame,width=25)
         self.ipAddr.grid(row=1,column=1)
         if 'ip' in self.prefDefaults:
-            self.ipAddr.insert(0, self.prefDefaults['mask'])
+            self.ipAddr.insert(0, self.prefDefaults['ip'])
 
         # Máscara de rede
         Label(self.propertiesFrame, text="Máscara de rede:").grid(row=2,sticky="E")
         self.mask = Entry(self.propertiesFrame, width=25)
         self.mask.grid(row=2,column=1)
         if 'mask' in self.prefDefaults:
-            self.mask.insert(0, self.prefDefaults['ip'])
+            self.mask.insert(0, self.prefDefaults['mask'])
 
         # Rota Padrão
         Label(self.propertiesFrame, text="Rota Padrão:").grid(row=3,sticky="E")
@@ -725,7 +728,7 @@ class Application(Frame):
         self.canvasHandle( 'release', event )
 
     def clickRouter(self,event):
-        self.novoNode("Router", event)
+        self.novoNode("Router", event,None,None,None)
 
     def clickSwitch(self,event):
         self.novoNode("Switch", event)
@@ -733,27 +736,36 @@ class Application(Frame):
     def clickHost(self,event):
         self.novoNode("Host", event)
 
-    def novoNode(self,node,event):
+    def novoNode(self,node,event=None,x=None,y=None,nomeNo=None):
         # Add um novo nó no canvas
         c = self.canvas
-        x = c.canvasx(event.x)
-        y = c.canvasy(event.y)
-
-        nomeNo = self.prefixos[node]
+        if x == None:
+            x = c.canvasx(event.x)
+        
+        if y == None:
+            y = c.canvasy(event.y)
 
         if node == "Switch":
-            self.Switch_num += 1
-            nomeNo += str(self.Switch_num)
+            if nomeNo == None:
+                nomeNo = self.prefixos[node]
+                self.Switch_num += 1
+                nomeNo += str(self.Switch_num)
             print("Add Switch " + nomeNo)
+
         elif node == "Host":
-            self.Host_num += 1
-            nomeNo += str(self.Host_num)
+            if nomeNo == None:
+                nomeNo = self.prefixos[node]
+                self.Host_num += 1
+                nomeNo += str(self.Host_num)
             print("Add host " + nomeNo)
             self.hostOpts[nomeNo] = {'nodeNum':self.Host_num}
             self.hostOpts[nomeNo]['hostname'] = nomeNo
+
         elif node == "Router":
-            self.Router_num += 1
-            nomeNo += str(self.Router_num)
+            if nomeNo == None:
+                nomeNo = self.prefixos[node]
+                self.Router_num += 1
+                nomeNo += str(self.Router_num)
             self.routerOpts[nomeNo] = {'nodeNum': self.Router_num}
             self.routerOpts[nomeNo]['hostname'] = nomeNo
             self.routerOpts[nomeNo]['dns'] = ''
@@ -802,7 +814,8 @@ class Application(Frame):
 
         fileMenu = Menu( mbar, tearoff=False )
         mbar.add_cascade( label="File", menu=fileMenu )
-        fileMenu.add_command( label="New")
+        fileMenu.add_command( label="New Topology", command=self.newTopology)
+        fileMenu.add_command( label="Load Topology", command=self.loadTopology)
         fileMenu.add_command( label="Save Topology", command=self.saveTopology)
         fileMenu.add_separator()
         fileMenu.add_command( label='Quit')
@@ -936,7 +949,82 @@ class Application(Frame):
 
         # print(json.dumps(topology))
             
+    def loadTopology(self):
+        c = self.canvas
+        formats = [
+            ('Mininet Topology','*.mn'),
+            ('All Files','*'),
+        ]
+
+        f = tkFileDialog.askopenfile(filetypes=formats, mode='r')
+        if f == None:
+            return
         
+        self.newTopology()
+        loadedTopo = json.load(f)
+        # Carregando os hosts
+        hosts = loadedTopo['hosts']
+        for host in hosts:
+            hostname = host['opts']['hostname']
+            x = host['x']
+            y = host['y']
+            self.novoNode("Host", None,float(x),float(y),hostname)
+            self.hostOpts[hostname] = host['opts']
+        
+        # Carregando os roteadores
+        routers = loadedTopo['routers']
+        for router in routers:
+            hostname = router['opts']['hostname']
+            x = router['x']
+            y = router['y']
+            self.novoNode("Router", None, float(x),float(y), hostname)
+            self.routerOpts[hostname] = router['opts']
+
+        # Carregando os Switchs
+        switchs = loadedTopo['switchs']
+        for switch in switchs:
+            hostname = switch['name']
+            x = switch['x']
+            y = switch['y']
+            self.novoNode("Switch", None, float(x), float(y), hostname)
+
+        # Carregando os links
+        links = loadedTopo['links']
+        for link in links:
+            
+            srcNode = link['src']
+            src = self.findWidgetByName(srcNode)
+            sx,sy = self.canvas.coords(self.widgetToItem[src])
+
+            destNode = link['dest']
+            dest = self.findWidgetByName(destNode)
+            dx,dy = self.canvas.coords(self.widgetToItem[dest])
+
+            self.link = self.canvas.create_line(sx,sy,dx,dy,width=4, fill='blue', tag='link')
+            self.addLink(src,dest)
+            self.createDataLinkBindings()
+            self.link = self.widget = None
+        
+        f.close()
+
+    def findWidgetByName( self, name ):
+        for widget in self.widgetToItem:
+            if name ==  widget[ 'text' ]:
+                return widget
+
+    def newTopology(self):
+        for widget in list(self.widgetToItem.keys()):
+            print('heyy')
+            self.excluiItem(self.widgetToItem[widget])
+        self.Host_num = 0
+        self.Router_num = 0
+        self.Switch_num = 0
+        self.links = {}
+        self.hostOpts = {}
+        self.routerOpts = {}
+
+        
+
 
 def imagens():
     return {
