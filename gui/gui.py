@@ -7,6 +7,19 @@ from PIL import Image
 from tkinter.ttk import Notebook
 import json
 import os
+from threading import Thread
+
+class Th(Thread):
+    def __init__(self, num):
+        Thread.__init__(self)
+        self.num = num
+
+    def run(self):
+        print("hello thread")
+        print(os.getpid())
+        a = os.system("sudo xfce4-terminal -x python ../src/customTopo.py cenario")
+        print(a)
+        
 
 ## pesquisar interface
 APP_TITLE = "Teste Regras Firewall"
@@ -413,11 +426,11 @@ class Application(Frame):
                 'from': dest_link 
             }
             topology['scene']['links'].append(link)
-        print(json.dumps(topology))
         arq = open("cenario","w")
         arq.write(json.dumps(topology))
         arq.close()
-        os.system("python ../src/customTopo.py cenario")
+        thread_run = Th(1)
+        thread_run.start()
 
     def stopScenario(self):
         print("Parando cenário")
@@ -1048,3 +1061,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
