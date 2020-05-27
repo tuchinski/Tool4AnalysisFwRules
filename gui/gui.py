@@ -64,6 +64,85 @@ class CustomDialog(object):
 
     def cancelAction(self):
         self.top.destroy()
+    
+    def verifyIP(self,event):
+        entryIP = event.widget.get()
+        # print(iface_mask_widget)
+        if len(entryIP) == 0:
+            return
+
+        # Separa a string pelos "."
+        octetos = entryIP.split('.')
+        
+        # Verifica se existem 4 octetos
+        if(len(octetos) != 4):
+            event.widget.delete(0,'end')
+            print("Erro! IP não é válido!")
+            return
+        for octeto in octetos:
+            # Verifica se nenhum caracter foi digitado
+            if octeto.isnumeric() == False:
+                print("Erro! Inserir apenas números")
+                event.widget.delete(0,'end')
+                return
+            
+            # Verifica o range do IP
+            if (int(octeto) < 0) or (int(octeto) > 255):
+                print("Erro! IP não é válido!")
+                event.widget.delete(0,'end')
+                return
+        return octetos
+
+    def verifyIPwithMask(self,event,iface_mask_widget):
+        
+        octetos = self.verifyIP(event)
+        if octetos == None:
+            return
+        iface_mask_widget.delete(0,'end')
+        first_octet = int(octetos[0])
+        if(first_octet < 127):
+            # Classe A
+            mask = '255.0.0.0'
+            iface_mask_widget.insert(0,mask)
+            
+        elif(first_octet < 191):
+            # Classe B
+            mask = '255.255.0.0'
+            iface_mask_widget.insert(0,mask)
+            
+        else:
+            # Classe C
+            mask = '255.255.255.0'
+            iface_mask_widget.insert(0,mask)
+
+    def verifyMask(self,event):
+        mask = event.widget.get()      
+        if len(mask) == 0:
+            return     
+        octetos = mask.split('.')
+
+        if(len(octetos) != 4):
+            event.widget.delete(0,'end')
+            print("Erro! Máscara não é válida!")
+            return
+
+        isZero = False
+        
+        for octeto in octetos:
+            if octeto.isnumeric() == False:
+                print("Erro! Inserir apenas números")
+                event.widget.delete(0,'end')
+                return    
+            octeto_bin = bin(int(octeto))
+            for i in range(2,len(octeto_bin)):
+                if octeto_bin[i] == '1' and isZero == True:
+                    print("ERRO: Máscara Inválida")
+                    event.widget.delete(0,'end')
+                    return
+
+                if octeto_bin[i] == '0':
+                    isZero = True
+
 
 class RouterDialog(CustomDialog):
     def __init__(self, master,title,prefDefaults,links):
@@ -123,6 +202,12 @@ class RouterDialog(CustomDialog):
             if 'links' in self.prefDefaults and link in self.prefDefaults['links']:
                 self.confLinks[link]['gw'].insert(0,self.prefDefaults['links'][link]['gw'])
             i+=1
+            
+            # cmd_botao = lambda t=tool : self.ativaBotao(t)
+
+            self.confLinks[link]['ip'].bind("<FocusOut>",lambda event, entry_mask=self.confLinks[link]['mask'] : self.verifyIPwithMask(event,entry_mask) )
+            self.confLinks[link]['mask'].bind("<FocusOut>",self.verifyMask)
+            self.confLinks[link]['gw'].bind("<FocusOut>",self.verifyIP)
             
             # Espaço em branco
             Label(self.netPropertiesFrame, text="  ").grid(row=i,sticky='E')
