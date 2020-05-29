@@ -8,6 +8,7 @@ from tkinter.ttk import Notebook
 import json
 import os
 from threading import Thread
+from tkinter.messagebox import showinfo
 
 class Th(Thread):
     def __init__(self, num):
@@ -77,18 +78,18 @@ class CustomDialog(object):
         # Verifica se existem 4 octetos
         if(len(octetos) != 4):
             event.widget.delete(0,'end')
-            print("Erro! IP não é válido!")
+            self.popup("Erro", "Erro! IP não é válido!")
             return
         for octeto in octetos:
             # Verifica se nenhum caracter foi digitado
             if octeto.isnumeric() == False:
-                print("Erro! Inserir apenas números")
+                self.popup("Erro", "Erro! Inserir apenas números")
                 event.widget.delete(0,'end')
                 return
             
             # Verifica o range do IP
             if (int(octeto) < 0) or (int(octeto) > 255):
-                print("Erro! IP não é válido!")
+                self.popup("Erro", "Erro! IP não é válido!")
                 event.widget.delete(0,'end')
                 return
         return octetos
@@ -115,6 +116,17 @@ class CustomDialog(object):
             mask = '255.255.255.0'
             iface_mask_widget.insert(0,mask)
 
+    def popup(self,titulo,mensagem):
+        win = Toplevel(width=500,height=500)
+        win.wm_title(titulo)
+    
+        l = Label(win, text=mensagem)
+        l.grid(row=0, column=0)
+    
+        b = Button(win, text="OK", command=win.destroy)
+        b.grid(row=1, column=0)
+
+
     def verifyMask(self,event):
         mask = event.widget.get()      
         if len(mask) == 0:
@@ -123,20 +135,21 @@ class CustomDialog(object):
 
         if(len(octetos) != 4):
             event.widget.delete(0,'end')
-            print("Erro! Máscara não é válida!")
+            self.popup("Erro", 'Erro! Máscara não é válida!')
             return
 
         isZero = False
         
         for octeto in octetos:
             if octeto.isnumeric() == False:
-                print("Erro! Inserir apenas números")
+                self.popup("Erro", "Erro! Inserir apenas números na máscara")
                 event.widget.delete(0,'end')
                 return    
             octeto_bin = bin(int(octeto))
             for i in range(2,len(octeto_bin)):
                 if octeto_bin[i] == '1' and isZero == True:
-                    print("ERRO: Máscara Inválida")
+                    self.popup("Erro", "ERRO: Máscara Inválida")
+                    print()
                     event.widget.delete(0,'end')
                     return
 
@@ -176,6 +189,8 @@ class RouterDialog(CustomDialog):
         self.dns.grid(row=1,column=1)
         if 'dns' in self.prefDefaults:
             self.dns.insert(0,self.prefDefaults['dns'])
+        
+        self.dns.bind("<FocusOut>",self.verifyIP)
         # print(self.prefDefaults)
 
         self.confLinks = {}
@@ -220,6 +235,9 @@ class RouterDialog(CustomDialog):
         self.rules.grid(row=1,column=0)
         if 'rules' in self.prefDefaults:
             self.rules.insert(1.0, self.prefDefaults['rules'])
+
+        """Aba 3: Testes"""
+        
             
 
 
@@ -263,12 +281,8 @@ class HostDialog(CustomDialog):
         self.firewallFrame = Frame(n)
         self.commandsFrame = Frame(n)
         n.add(self.propertiesFrame, text="Propriedades")
-        n.add(self.firewallFrame, text="Firewall")
         n.add(self.commandsFrame, text="Comandos")
         n.pack()
-        print("@@@@@@@@@@@@@@@@@@@")
-        print(self.prefDefaults)
-        print("@@@@@@@@@@@@@@@@@@@")
 
         """ Aba 1: Propriedades """
         # Hostname
@@ -329,7 +343,6 @@ class HostDialog(CustomDialog):
         self.result = results
 
     def cancelAction(self):
-        print("fdfsdfdfsd")
         result = None
         
 class Application(Frame):
