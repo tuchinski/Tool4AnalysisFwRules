@@ -4,7 +4,7 @@ from tkinter import BitmapImage, Button, Canvas, Entry, Frame, Label, Menu, Phot
 
 from tkinter import filedialog as tkFileDialog
 from PIL import Image
-from tkinter.ttk import Notebook
+from tkinter.ttk import Notebook, Combobox
 import json
 import os
 from threading import Thread
@@ -139,7 +139,10 @@ class CustomDialog(object):
             return
 
         isZero = False
-        
+
+
+        #imnort ipaddress
+        #VERIFICAR TESTE 255.255.255.1
         for octeto in octetos:
             if octeto.isnumeric() == False:
                 self.popup("Erro", "Erro! Inserir apenas números na máscara")
@@ -237,8 +240,43 @@ class RouterDialog(CustomDialog):
             self.rules.insert(1.0, self.prefDefaults['rules'])
 
         """Aba 3: Testes"""
+        buttonAddRule = Button(self.testFrame, text="Adicionar novo teste", command=self.addNewRule)
+        buttonAddRule.grid(row=0, column=0)
+        self.rulePosition = 0
+
+        self.tests = {}
+    
+    def addNewRule(self):
+        print("Add nova regra")
+        Label(self.testFrame,text="Teste {}".format(self.rulePosition+1)).grid(row=self.rulePosition + 1, column=0)
         
-            
+        Label(self.testFrame,text="Ip Origem:").grid(row=self.rulePosition + 1, column=1, sticky="W")
+        srcIP = Entry(self.testFrame,width=14)
+        srcIP.grid(row=self.rulePosition+1, column=2)
+
+        Label(self.testFrame,text="Ip Destino:").grid(row=self.rulePosition + 1, column=3, sticky="W")
+        destIP = Entry(self.testFrame,width=14)
+        destIP.grid(row=self.rulePosition+1, column=4)
+
+        Label(self.testFrame,text="Protocolo:").grid(row=self.rulePosition + 1, column=5, sticky="W")
+        comboBoxProtocolo = Combobox(self.testFrame, width=5, values=['TCP','UDP', 'ICMP'])
+        comboBoxProtocolo.grid(row=self.rulePosition+1, column=6)
+
+        Label(self.testFrame,text="Porta Origem:").grid(row=self.rulePosition + 1, column=7, sticky="W")
+        srcPort = Entry(self.testFrame,width=5)
+        srcPort.grid(row=self.rulePosition+1, column=8)
+
+        Label(self.testFrame,text="Porta Destino:").grid(row=self.rulePosition + 1, column=9, sticky="W")
+        destPort = Entry(self.testFrame,width=5)
+        destPort.grid(row=self.rulePosition+1, column=10)
+
+        Label(self.testFrame,text="Resultado:").grid(row=self.rulePosition + 1, column=11, sticky="W")
+        comboBoxResult = Combobox(self.testFrame, width=8, values=['ACEITAR', 'NEGAR'])
+        comboBoxResult.grid(row=self.rulePosition+1, column=12)
+
+        
+        
+        self.rulePosition += 1
 
 
     #     addNewRuleButton = Button(self.firewallFrame, text='Adicionar nova regra', command=self.addNewRuleField)
@@ -412,6 +450,7 @@ class Application(Frame):
         # Bindings do teclado
         self.bind( '<KeyPress-Delete>', self.excluiSelecao )
         self.bind( '<Control-q>', lambda event: self.quit() )
+        self.bind( '<Key>', self.keyPressed )
         self.focus()
 
         # Informações dos nodes
@@ -420,6 +459,22 @@ class Application(Frame):
         self.routerOpts = {}
 
         Wm.wm_protocol( self.top, name='WM_DELETE_WINDOW', func=self.quit )
+
+    def keyPressed(self,event):
+        key = event.char.lower()
+        if key == 'r':
+            self.ativaBotao('Router')
+        elif key == 's':
+            self.ativaBotao('Switch')
+        elif key == 'h':
+            self.ativaBotao('Host')
+        elif key == 'm':
+            self.ativaBotao('Select')
+        elif key == 'n':
+            self.ativaBotao('NetLink')
+
+
+
 
     def quit( self ):
         # Fecha o programa
