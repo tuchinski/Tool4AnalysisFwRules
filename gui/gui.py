@@ -165,6 +165,7 @@ class RouterDialog(CustomDialog):
         self.prefDefaults = prefDefaults
         self.result = None
         self.links = links
+        self.fieldsTest = []
 
         CustomDialog.__init__(self,master,title)
     
@@ -242,41 +243,65 @@ class RouterDialog(CustomDialog):
         """Aba 3: Testes"""
         buttonAddRule = Button(self.testFrame, text="Adicionar novo teste", command=self.addNewRule)
         buttonAddRule.grid(row=0, column=0)
-        self.rulePosition = 0
+        self.testPosition = 0
 
-        self.tests = {}
+        for test in self.prefDefaults['tests']:
+            print("Olha o teste!!!!!!!!!!!!!")
+            print(test['srcIP'])
+            self.addNewRule(test)
+       
     
-    def addNewRule(self):
-        print("Add nova regra")
-        Label(self.testFrame,text="Teste {}".format(self.rulePosition+1)).grid(row=self.rulePosition + 1, column=0)
+    def addNewRule(self,currentTest=None):
+        print("Add novo teste")
         
-        Label(self.testFrame,text="Ip Origem:").grid(row=self.rulePosition + 1, column=1, sticky="W")
-        srcIP = Entry(self.testFrame,width=14)
-        srcIP.grid(row=self.rulePosition+1, column=2)
-
-        Label(self.testFrame,text="Ip Destino:").grid(row=self.rulePosition + 1, column=3, sticky="W")
-        destIP = Entry(self.testFrame,width=14)
-        destIP.grid(row=self.rulePosition+1, column=4)
-
-        Label(self.testFrame,text="Protocolo:").grid(row=self.rulePosition + 1, column=5, sticky="W")
-        comboBoxProtocolo = Combobox(self.testFrame, width=5, values=['TCP','UDP', 'ICMP'])
-        comboBoxProtocolo.grid(row=self.rulePosition+1, column=6)
-
-        Label(self.testFrame,text="Porta Origem:").grid(row=self.rulePosition + 1, column=7, sticky="W")
-        srcPort = Entry(self.testFrame,width=5)
-        srcPort.grid(row=self.rulePosition+1, column=8)
-
-        Label(self.testFrame,text="Porta Destino:").grid(row=self.rulePosition + 1, column=9, sticky="W")
-        destPort = Entry(self.testFrame,width=5)
-        destPort.grid(row=self.rulePosition+1, column=10)
-
-        Label(self.testFrame,text="Resultado:").grid(row=self.rulePosition + 1, column=11, sticky="W")
-        comboBoxResult = Combobox(self.testFrame, width=8, values=['ACEITAR', 'NEGAR'])
-        comboBoxResult.grid(row=self.rulePosition+1, column=12)
-
+        test = {}
+        print(currentTest)
+        Label(self.testFrame,text="Teste {}".format(self.testPosition+1)).grid(row=self.testPosition + 1, column=0)
         
+        Label(self.testFrame,text="Ip Origem:").grid(row=self.testPosition + 1, column=1, sticky="W")
+        test['srcIP'] = Entry(self.testFrame,width=14)
+        test['srcIP'].grid(row=self.testPosition+1, column=2)
+        if currentTest != None:
+            test['srcIP'].insert(0,currentTest['srcIP'])
+
+        Label(self.testFrame,text="Ip Destino:").grid(row=self.testPosition + 1, column=3, sticky="W")
+        test['destIP'] = Entry(self.testFrame,width=14)
+        test['destIP'].grid(row=self.testPosition+1, column=4)
+        if currentTest != None:
+            test['destIP'].insert(0,currentTest['destIP'])
+
+
+        Label(self.testFrame,text="Protocolo:").grid(row=self.testPosition + 1, column=5, sticky="W")
+        test['comboBoxProtocolo'] = Combobox(self.testFrame, width=5, values=['TCP','UDP', 'ICMP'])
+        test['comboBoxProtocolo'].grid(row=self.testPosition+1, column=6)
+        if currentTest != None:
+            test['comboBoxProtocolo'].set(currentTest['comboBoxProtocolo'])
+        else:
+            test['comboBoxProtocolo'].current(0)
+
+        Label(self.testFrame,text="Porta Origem:").grid(row=self.testPosition + 1, column=7, sticky="W")
+        test['srcPort'] = Entry(self.testFrame,width=5)
+        test['srcPort'].grid(row=self.testPosition+1, column=8)
+        if currentTest != None:
+            test['srcPort'].insert(0,currentTest['srcPort'])
+
+        Label(self.testFrame,text="Porta Destino:").grid(row=self.testPosition + 1, column=9, sticky="W")
+        test['destPort'] = Entry(self.testFrame,width=5)
+        test['destPort'].grid(row=self.testPosition+1, column=10)
+        if currentTest != None:
+            test['destPort'].insert(0,currentTest['destPort'])
+
+        Label(self.testFrame,text="Resultado:").grid(row=self.testPosition + 1, column=11, sticky="W")
+        test['comboBoxResult'] = Combobox(self.testFrame, width=8, values=['ACEITAR', 'NEGAR'])
+        test['comboBoxResult'].grid(row=self.testPosition+1, column=12)
+        if currentTest != None:
+            test['comboBoxResult'].set(currentTest['comboBoxResult'])
+        else:
+            test['comboBoxResult'].current(0)
+
+        self.fieldsTest.append(test)
         
-        self.rulePosition += 1
+        self.testPosition += 1
 
 
     #     addNewRuleButton = Button(self.firewallFrame, text='Adicionar nova regra', command=self.addNewRuleField)
@@ -303,6 +328,16 @@ class RouterDialog(CustomDialog):
             self.result['links'][link]['mask'] = self.confLinks[link]['mask'].get()
             self.result['links'][link]['gw'] = self.confLinks[link]['gw'].get()
         self.result['rules'] = self.rules.get(1.0,"end-1c")
+        self.result['tests'] = []
+        for test in self.fieldsTest:
+            currentTest = {}
+            currentTest['srcIP'] = test['srcIP'].get()
+            currentTest['destIP'] = test['destIP'].get()
+            currentTest['comboBoxProtocolo'] = test['comboBoxProtocolo'].get()
+            currentTest['srcPort'] = test['srcPort'].get()
+            currentTest['destPort'] = test['destPort'].get()
+            currentTest['comboBoxResult'] = test['comboBoxResult'].get()
+            self.result['tests'].append(currentTest)
 
 
 class HostDialog(CustomDialog):
@@ -937,6 +972,7 @@ class Application(Frame):
             self.routerOpts[nomeNo]['dns'] = ''
             self.routerOpts[nomeNo]['links'] = {}
             self.routerOpts[nomeNo]['rules'] = ''
+            self.routerOpts[nomeNo]['tests'] = []
             print("Add router " + nomeNo)
 
         icone = self.nodeIcone(node,nomeNo)
