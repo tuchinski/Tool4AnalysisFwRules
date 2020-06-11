@@ -35,23 +35,37 @@ IMAGE_PATH = "images/"
 
 
 class CustomDialog(object):
-    def __init__(self, master, _title):
+    def __init__(self, master, _title,geometry='800x800'):
         self.top = Toplevel(master)
+        # Toplevel.__init__(self,master)
+        self.top.transient(master)
 
-        self.bodyFrame = Frame(self.top)
+        if _title:
+            self.top.title(_title)
+
+        self.bodyFrame = Frame(self.top,width=1000, height=700)
         self.bodyFrame.grid(row=0, column=0, sticky='nswe')
+        
+        self.top.parent = master
+        self.top.geometry(geometry)
 
         self.body(self.bodyFrame)
 
-        buttonFrame = Frame(self.top, relief='ridge', bd=3, bg='lightgrey')
+        buttonFrame = Frame(self.top, relief='ridge', bd=3, bg='lightgrey',width=500, height=500)
         buttonFrame.grid(row=1,column=0, sticky='nswe')
 
         okButton = Button(buttonFrame, width=8, text='OK', relief='groove', bd=4, command=self.okAction)
         okButton.grid(row=0, column=0, sticky='E')
 
-        cancelButton = Button(buttonFrame, width=8, text='Cancelar', relief='groove', bd=4, command=self.okAction)
+        cancelButton = Button(buttonFrame, width=8, text='Cancelar', relief='groove', bd=4, command=self.cancelAction)
         cancelButton.grid(row=0, column=1, sticky='W')
         self.countRule = 1
+
+        # self.top.geometry("+%d+%d" % (master.winfo_rootx()+50,master.winfo_rooty()+50))
+        # self.top.geometry("+50+50")
+        self.top.protocol("WM_DELETE_WINDOW", self.cancelAction)
+
+        self.top.wait_window(self.top)
     
     def body(self,master):
         self.rootFrame = master
@@ -64,6 +78,7 @@ class CustomDialog(object):
         self.top.destroy()
 
     def cancelAction(self):
+        print("Cancel action")
         self.top.destroy()
     
     def verifyIP(self,event):
@@ -126,7 +141,6 @@ class CustomDialog(object):
         b = Button(win, text="OK", command=win.destroy)
         b.grid(row=1, column=0)
 
-
     def verifyMask(self,event):
         mask = event.widget.get()      
         if len(mask) == 0:
@@ -166,13 +180,17 @@ class RouterDialog(CustomDialog):
         self.result = None
         self.links = links
         self.fieldsTest = []
+        self.title = self.prefDefaults['hostname']
 
-        CustomDialog.__init__(self,master,title)
+        CustomDialog.__init__(self,master,self.title,'1150x700')
     
     
     def body(self, master):
+        routerWidth = 1140
+        routerHeight = 630
         self.rootFrame = master
-        n = Notebook(self.rootFrame)
+        self.rootFrame.widgetName = self.prefDefaults['hostname']
+        n = Notebook(self.rootFrame,width=routerWidth, height=routerHeight)
         self.netPropertiesFrame = Frame(n)
         self.firewallFrame = Frame(n)
         self.testFrame = Frame(n)
@@ -234,8 +252,8 @@ class RouterDialog(CustomDialog):
         
         """ Aba 2: Firewall """
 
-        Label(self.firewallFrame, text="Regras (1 regra por linha):").grid(row=0,sticky="NE")
-        self.rules = Text(self.firewallFrame, height=5, width=28)
+        Label(self.firewallFrame, text="Regras (1 regra por linha):").grid(row=0,sticky="NW")
+        self.rules = Text(self.firewallFrame, height=50, width=130)
         self.rules.grid(row=1,column=0)
         if 'rules' in self.prefDefaults:
             self.rules.insert(1.0, self.prefDefaults['rules'])
@@ -246,7 +264,6 @@ class RouterDialog(CustomDialog):
         self.testPosition = 0
 
         for test in self.prefDefaults['tests']:
-            print("Olha o teste!!!!!!!!!!!!!")
             print(test['srcIP'])
             self.addNewRule(test)
        
@@ -256,7 +273,7 @@ class RouterDialog(CustomDialog):
         
         test = {}
         print(currentTest)
-        Label(self.testFrame,text="Teste {}".format(self.testPosition+1)).grid(row=self.testPosition + 1, column=0)
+        Label(self.testFrame,text="TESTE {}".format(self.testPosition+1)).grid(row=self.testPosition + 1, column=0)
         
         Label(self.testFrame,text="Ip Origem:").grid(row=self.testPosition + 1, column=1, sticky="W")
         test['srcIP'] = Entry(self.testFrame,width=14)
@@ -316,7 +333,8 @@ class RouterDialog(CustomDialog):
     #     self.countRule += 1
 
     #     print("Add nova regra")
-
+    def cancelAction(self):
+        return super().cancelAction()
 
     def apply(self):
         self.result = {'hostname': self.hostname.get()}
@@ -427,7 +445,7 @@ class Application(Frame):
     def __init__(self,parent=None, cheight=900 , cwidth=1000):
         # self.master = master
         # self.master.protocol("WM_DELETE_WINDOW", self.close)
-        Frame.__init__(self,parent)
+        Frame.__init__(self,parent,width=1000,height=1000)
         self.appName = APP_TITLE
         
         #Titulo
@@ -1062,7 +1080,7 @@ class Application(Frame):
             nome = link['text']
             links.append(nome)
         routerBox = RouterDialog(self,title='Detalhes Router ' + name, prefDefaults=prefDefaults,links=links)
-        self.master.wait_window(routerBox.top)
+        # self.master.wait_window(routerBox.top)
         
         if routerBox.result:
             print(routerBox.result)
