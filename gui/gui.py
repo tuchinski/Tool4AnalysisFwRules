@@ -35,15 +35,18 @@ IMAGE_PATH = "images/"
 
 
 class CustomDialog(object):
-    def __init__(self, master, _title,geometry='800x800'):
+    def __init__(self, master, _title,geometry='800x500'):
         self.top = Toplevel(master)
         # Toplevel.__init__(self,master)
         self.top.transient(master)
 
         if _title:
             self.top.title(_title)
+        widthXheight = geometry.split('x')
+        bodyW = widthXheight[0]
+        bodyH = widthXheight[1]
 
-        self.bodyFrame = Frame(self.top,width=1000, height=700)
+        self.bodyFrame = Frame(self.top,width=bodyW, height=bodyH)
         self.bodyFrame.grid(row=0, column=0, sticky='nswe')
         
         self.top.parent = master
@@ -180,9 +183,8 @@ class RouterDialog(CustomDialog):
         self.result = None
         self.links = links
         self.fieldsTest = []
-        self.title = self.prefDefaults['hostname']
 
-        CustomDialog.__init__(self,master,self.title,'1150x700')
+        CustomDialog.__init__(self,master,title,'1150x700')
     
     
     def body(self, master):
@@ -260,7 +262,7 @@ class RouterDialog(CustomDialog):
 
         """Aba 3: Testes"""
         buttonAddRule = Button(self.testFrame, text="Adicionar novo teste", command=self.addNewRule)
-        buttonAddRule.grid(row=0, column=0)
+        buttonAddRule.grid(row=0, column=0,columnspan=2, padx=1)
         self.testPosition = 0
 
         for test in self.prefDefaults['tests']:
@@ -273,7 +275,7 @@ class RouterDialog(CustomDialog):
         
         test = {}
         print(currentTest)
-        Label(self.testFrame,text="TESTE {}".format(self.testPosition+1)).grid(row=self.testPosition + 1, column=0)
+        Label(self.testFrame,text="TESTE {}".format(self.testPosition+1),relief='solid').grid(row=self.testPosition + 1, column=0,sticky='ww')
         
         Label(self.testFrame,text="Ip Origem:").grid(row=self.testPosition + 1, column=1, sticky="W")
         test['srcIP'] = Entry(self.testFrame,width=14)
@@ -320,19 +322,6 @@ class RouterDialog(CustomDialog):
         
         self.testPosition += 1
 
-
-    #     addNewRuleButton = Button(self.firewallFrame, text='Adicionar nova regra', command=self.addNewRuleField)
-    #     addNewRuleButton.grid()
-    #     self.ruleEntries = []
-
-
-    # def addNewRuleField(self):
-    #     Label(self.firewallFrame, text='Regra ' + str(self.countRule)).grid(row=self.countRule,sticky='W')
-    #     self.ruleEntries.append(Entry(self.firewallFrame, width=25))
-    #     self.ruleEntries[-1].grid(row=self.countRule,column=1)
-    #     self.countRule += 1
-
-    #     print("Add nova regra")
     def cancelAction(self):
         return super().cancelAction()
 
@@ -363,11 +352,13 @@ class HostDialog(CustomDialog):
         self.prefDefaults = prefDefaults
         self.result = None
 
-        CustomDialog.__init__(self,master,title)
+        CustomDialog.__init__(self,master,title,'800x600')
     
     def body(self,master):
+        hostWidth = 790
+        hostHeight = 525
         self.rootFrame = master
-        n = Notebook(self.rootFrame)
+        n = Notebook(self.rootFrame, width = hostWidth, height = hostHeight)
         self.propertiesFrame = Frame(n)
         self.firewallFrame = Frame(n)
         self.commandsFrame = Frame(n)
@@ -408,14 +399,14 @@ class HostDialog(CustomDialog):
         """ Aba 3: Comandos"""
         # Comando inicial
         Label(self.commandsFrame, text="Comando Inicial:").grid(row=0,sticky="NE")
-        self.startCommand = Text(self.commandsFrame, height=5, width=28)
+        self.startCommand = Text(self.commandsFrame, height=15, width=80)
         self.startCommand.grid(row=0,column=1)
         if 'startCommand' in self.prefDefaults:
             self.startCommand.insert(1.0, self.prefDefaults['startCommand'])
     
         # Comando final
         Label(self.commandsFrame, text="Comando Final:").grid(row=1,sticky="NE")
-        self.finalCommand = Text(self.commandsFrame, height=5, width=28)
+        self.finalCommand = Text(self.commandsFrame, height=15, width=80)
         self.finalCommand.grid(row=1,column=1)
         if 'finalCommand' in self.prefDefaults:
             self.finalCommand.insert(1.0, self.prefDefaults['finalCommand'])
@@ -434,7 +425,7 @@ class HostDialog(CustomDialog):
         self.result = results
 
     def cancelAction(self):
-        result = None
+        return super().cancelAction()
         
 class Application(Frame):
 
@@ -1054,7 +1045,7 @@ class Application(Frame):
         prefDefaults = self.hostOpts[name]
         
         hostBox = HostDialog(self, title='Detalhes Host ' + name, prefDefaults=prefDefaults)
-        self.master.wait_window(hostBox.top)
+        # self.master.wait_window(hostBox.top)
         
         if hostBox.result:
             print(hostBox.result)
