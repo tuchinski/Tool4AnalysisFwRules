@@ -19,7 +19,10 @@ class Th(Thread):
     def run(self):
         print("hello thread")
         print(os.getpid())
+        a = os.system("sudo mn -c")
+        print("Criando o cenário no Mininet")
         a = os.system("sudo xfce4-terminal -x python ../src/customTopo.py cenario")
+        # a = os.system("xfce4-terminal -H -x sudo python ../src/customTopo.py cenario ; python final.py ")
         print(a)
         
 
