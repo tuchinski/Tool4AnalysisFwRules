@@ -9,6 +9,7 @@ import json
 import os
 from threading import Thread
 from tkinter.messagebox import showinfo
+import uuid
 
 class Th(Thread):
     def __init__(self, num):
@@ -182,7 +183,8 @@ class RouterDialog(CustomDialog):
         self.prefDefaults = prefDefaults
         self.result = None
         self.links = links
-        self.fieldsTest = []
+        self.fieldsTest = {}
+        self.buttonsDeleteTests = []
 
         CustomDialog.__init__(self,master,title,'1150x700')
     
@@ -274,23 +276,29 @@ class RouterDialog(CustomDialog):
         print("Add novo teste")
         
         test = {}
-        print(currentTest)
-        Label(self.testFrame,text="TESTE {}".format(self.testPosition+1),relief='solid').grid(row=self.testPosition + 1, column=0,sticky='ww')
+        test['labelTest'] = Label(self.testFrame,text="TESTE {}".format(self.testPosition+1),relief='solid')
+        test['labelTest'].grid(row=self.testPosition + 1, column=0,sticky='ww')
         
-        Label(self.testFrame,text="Ip Origem:").grid(row=self.testPosition + 1, column=1, sticky="W")
+        test['labelIpSrc'] = Label(self.testFrame,text="Ip Origem:")
+        test['labelIpSrc'].grid(row=self.testPosition + 1, column=1, sticky="W")
+        
         test['srcIP'] = Entry(self.testFrame,width=14)
         test['srcIP'].grid(row=self.testPosition+1, column=2)
         if currentTest != None:
             test['srcIP'].insert(0,currentTest['srcIP'])
 
-        Label(self.testFrame,text="Ip Destino:").grid(row=self.testPosition + 1, column=3, sticky="W")
+        test['labelIpDest'] = Label(self.testFrame,text="Ip Destino:")
+        test['labelIpDest'].grid(row=self.testPosition + 1, column=3, sticky="W")
+
         test['destIP'] = Entry(self.testFrame,width=14)
         test['destIP'].grid(row=self.testPosition+1, column=4)
         if currentTest != None:
             test['destIP'].insert(0,currentTest['destIP'])
 
 
-        Label(self.testFrame,text="Protocolo:").grid(row=self.testPosition + 1, column=5, sticky="W")
+        test['labelProtocol'] = Label(self.testFrame,text="Protocolo:")
+        test['labelProtocol'].grid(row=self.testPosition + 1, column=5, sticky="W")
+
         test['comboBoxProtocolo'] = Combobox(self.testFrame, width=5, values=['TCP','UDP', 'ICMP'])
         test['comboBoxProtocolo'].grid(row=self.testPosition+1, column=6)
         if currentTest != None:
@@ -298,19 +306,24 @@ class RouterDialog(CustomDialog):
         else:
             test['comboBoxProtocolo'].current(0)
 
-        Label(self.testFrame,text="Porta Origem:").grid(row=self.testPosition + 1, column=7, sticky="W")
+        test['labelSrcPort'] = Label(self.testFrame,text="Porta Origem:")
+        test['labelSrcPort'].grid(row=self.testPosition + 1, column=7, sticky="W")
+
         test['srcPort'] = Entry(self.testFrame,width=5)
         test['srcPort'].grid(row=self.testPosition+1, column=8)
         if currentTest != None:
             test['srcPort'].insert(0,currentTest['srcPort'])
 
-        Label(self.testFrame,text="Porta Destino:").grid(row=self.testPosition + 1, column=9, sticky="W")
+        test['labelDestPort'] = Label(self.testFrame,text="Porta Destino:")
+        test['labelDestPort'].grid(row=self.testPosition + 1, column=9, sticky="W")
+
         test['destPort'] = Entry(self.testFrame,width=5)
         test['destPort'].grid(row=self.testPosition+1, column=10)
         if currentTest != None:
             test['destPort'].insert(0,currentTest['destPort'])
 
-        Label(self.testFrame,text="Resultado:").grid(row=self.testPosition + 1, column=11, sticky="W")
+        test['labelResult'] = Label(self.testFrame,text="Resultado:")
+        test['labelResult'].grid(row=self.testPosition + 1, column=11, sticky="W")
         test['comboBoxResult'] = Combobox(self.testFrame, width=8, values=['ACEITAR', 'NEGAR'])
         test['comboBoxResult'].grid(row=self.testPosition+1, column=12)
         if currentTest != None:
@@ -318,9 +331,39 @@ class RouterDialog(CustomDialog):
         else:
             test['comboBoxResult'].current(0)
 
-        self.fieldsTest.append(test)
+        test['id'] = uuid.uuid1()
+
+        test['buttonDeleteTest'] = Button(self.testFrame,text="X",command=lambda n=test['id']: self.deleteTest(n))
+        test['buttonDeleteTest'].grid(row=self.testPosition + 1, column=13, sticky="E")
+
+        self.fieldsTest[test['id']] = test
         
         self.testPosition += 1
+
+    def deleteTest(self,index):
+        # index = index-1
+        print(index)
+        print(self.fieldsTest[index]['srcPort'])
+        self.fieldsTest[index]['labelTest'].destroy()
+        self.fieldsTest[index]['labelIpSrc'].destroy()
+        self.fieldsTest[index]['srcIP'].destroy()
+        self.fieldsTest[index]['labelIpDest'].destroy()
+        self.fieldsTest[index]['destIP'].destroy()
+        self.fieldsTest[index]['labelProtocol'].destroy()
+        self.fieldsTest[index]['comboBoxProtocolo'].destroy()
+        self.fieldsTest[index]['labelSrcPort'].destroy()
+        self.fieldsTest[index]['srcPort'].destroy()
+        self.fieldsTest[index]['labelDestPort'].destroy()
+        self.fieldsTest[index]['destPort'].destroy()
+        self.fieldsTest[index]['labelResult'].destroy()
+        self.fieldsTest[index]['comboBoxResult'].destroy()
+        self.fieldsTest[index]['buttonDeleteTest'].destroy()
+        # for i in range(index+1,len(self.fieldsTest)):
+        #     self.fieldsTest[i]['labelTest']['text'] = "TESTE {}".format(i)
+        # self.testPosition -= 1
+            
+        del self.fieldsTest[index]
+        # print(self.fieldsTest)
 
     def cancelAction(self):
         return super().cancelAction()
@@ -337,13 +380,14 @@ class RouterDialog(CustomDialog):
         self.result['rules'] = self.rules.get(1.0,"end-1c")
         self.result['tests'] = []
         for test in self.fieldsTest:
+            print(test)
             currentTest = {}
-            currentTest['srcIP'] = test['srcIP'].get()
-            currentTest['destIP'] = test['destIP'].get()
-            currentTest['comboBoxProtocolo'] = test['comboBoxProtocolo'].get()
-            currentTest['srcPort'] = test['srcPort'].get()
-            currentTest['destPort'] = test['destPort'].get()
-            currentTest['comboBoxResult'] = test['comboBoxResult'].get()
+            currentTest['srcIP'] = self.fieldsTest[test]['srcIP'].get()
+            currentTest['destIP'] = self.fieldsTest[test]['destIP'].get()
+            currentTest['comboBoxProtocolo'] = self.fieldsTest[test]['comboBoxProtocolo'].get()
+            currentTest['srcPort'] = self.fieldsTest[test]['srcPort'].get()
+            currentTest['destPort'] = self.fieldsTest[test]['destPort'].get()
+            currentTest['comboBoxResult'] = self.fieldsTest[test]['comboBoxResult'].get()
             self.result['tests'].append(currentTest)
 
 
