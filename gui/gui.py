@@ -758,6 +758,11 @@ class Application(Frame):
             },
             'test' :[]
         }
+
+        glossary_result = {
+            'ACEITAR': 'accept',
+            'NEGAR': 'deny'
+        }
         for widget in self.widgetToItem:
             name = widget['text']
             tags = self.canvas.gettags(self.widgetToItem[widget])
@@ -800,7 +805,6 @@ class Application(Frame):
                     'label': name
                 })
 
-
         for link in self.links:
             source_link = self.links[link]['src']['text']
             dest_link = self.links[link]['dest']['text']
@@ -810,11 +814,28 @@ class Application(Frame):
                 'from': dest_link 
             }
             topology['scene']['links'].append(link)
+
+        for test in self.firewallTests:
+            currentTest = {}
+            currentTest['sourceIP'] = test['srcIP']
+            currentTest['destIP'] = test['destIP']
+            currentTest['protocol'] = test['comboBoxProtocolo'].lower()
+            if currentTest['protocol'] == 'icmp':
+                currentTest['sPort'] = '*'
+                currentTest['dPort'] = '*'
+            else:
+                currentTest['sPort'] = test['srcPort']
+                currentTest['sPort'] = test['destPort']
+
+            currentTest['expected'] = glossary_result[test['comboBoxResult']]
+            topology['test'].append(currentTest)
+
+        print(json.dumps(topology))
         arq = open("cenario","w")
         arq.write(json.dumps(topology))
         arq.close()
-        thread_run = Th(1)
-        thread_run.start()
+        # thread_run = Th(1)
+        # thread_run.start()
 
     def stopScenario(self):
         print("Parando cenário")
@@ -1331,7 +1352,8 @@ class Application(Frame):
 
         topology['hosts'] = hosts    
         topology['switchs'] = switchs    
-        topology['routers'] = routers    
+        topology['routers'] = routers
+        topology['tests'] = self.firewallTests   
 
         # Salvando os links 
         links = []
@@ -1374,6 +1396,10 @@ class Application(Frame):
         loadedTopo = json.load(f)
         # Carregando os hosts
         hosts = loadedTopo['hosts']
+
+        # Carrega os testes
+        self.firewallTests = loadedTopo['tests']
+
         for host in hosts:
             hostname = host['opts']['hostname']
             x = host['x']
