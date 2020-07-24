@@ -825,7 +825,7 @@ class Application(Frame):
                 currentTest['dPort'] = '*'
             else:
                 currentTest['sPort'] = test['srcPort']
-                currentTest['sPort'] = test['destPort']
+                currentTest['dPort'] = test['destPort']
 
             currentTest['expected'] = glossary_result[test['comboBoxResult']]
             topology['test'].append(currentTest)
