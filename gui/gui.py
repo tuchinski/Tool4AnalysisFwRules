@@ -34,7 +34,6 @@ IMAGE_PATH = "images/"
 
 
 
-
 class CustomDialog(object):
     def __init__(self, master, _title,geometry='800x500'):
         self.top = Toplevel(master)
@@ -178,6 +177,149 @@ class CustomDialog(object):
                     isZero = True
 
 
+class TestesDialog(CustomDialog):
+    def __init__(self, master ,tests):
+        self.title = "Testes das Regras de Firewall"
+        self.tests =  tests
+        self.fieldsTest = {}
+
+        CustomDialog.__init__(self,master,self.title,'1150x700')
+
+    def body(self,master):
+        self.rootFrame = master
+        self.rootFrame.widgetName = self.title
+        routerWidth = 1140
+        routerHeight = 630
+        n = Notebook(self.rootFrame,width=routerWidth, height=routerHeight)
+        self.testFrame = Frame(n)
+        n.add(self.testFrame, text="Testes")
+        n.pack()
+        
+
+        buttonAddRule = Button(self.testFrame, text="Adicionar novo teste", command=self.addNewTest)
+        buttonAddRule.grid(row=0, column=0,columnspan=2, padx=1)
+        self.testPosition = 0
+
+        # print(firewall_tests)
+        for test in self.tests:
+            print(test)
+            self.addNewTest(test)
+
+    def addNewTest(self,currentTest=None):
+        print("Add novo teste")
+        
+        test = {}
+        test['labelTest'] = Label(self.testFrame,text="TESTE {}".format(self.testPosition+1),relief='solid')
+        test['labelTest'].grid(row=self.testPosition + 1, column=0,sticky='ww')
+        
+        test['labelIpSrc'] = Label(self.testFrame,text="Ip Origem:")
+        test['labelIpSrc'].grid(row=self.testPosition + 1, column=1, sticky="W")
+        
+        test['srcIP'] = Entry(self.testFrame,width=14)
+        test['srcIP'].grid(row=self.testPosition+1, column=2)
+        if currentTest != None:
+            # print('oioi',currentTest)
+            test['srcIP'].insert(0,currentTest['srcIP'])
+
+        test['labelIpDest'] = Label(self.testFrame,text="Ip Destino:")
+        test['labelIpDest'].grid(row=self.testPosition + 1, column=3, sticky="W")
+
+        test['destIP'] = Entry(self.testFrame,width=14)
+        test['destIP'].grid(row=self.testPosition+1, column=4)
+        if currentTest != None:
+            test['destIP'].insert(0,currentTest['destIP'])
+
+
+        test['labelProtocol'] = Label(self.testFrame,text="Protocolo:")
+        test['labelProtocol'].grid(row=self.testPosition + 1, column=5, sticky="W")
+
+        test['comboBoxProtocolo'] = Combobox(self.testFrame, width=5, values=['TCP','UDP', 'ICMP'])
+        test['comboBoxProtocolo'].grid(row=self.testPosition+1, column=6)
+        if currentTest != None:
+            test['comboBoxProtocolo'].set(currentTest['comboBoxProtocolo'])
+        else:
+            test['comboBoxProtocolo'].current(0)
+
+        test['labelSrcPort'] = Label(self.testFrame,text="Porta Origem:")
+        test['labelSrcPort'].grid(row=self.testPosition + 1, column=7, sticky="W")
+
+        test['srcPort'] = Entry(self.testFrame,width=5)
+        test['srcPort'].grid(row=self.testPosition+1, column=8)
+        if currentTest != None:
+            test['srcPort'].insert(0,currentTest['srcPort'])
+
+        test['labelDestPort'] = Label(self.testFrame,text="Porta Destino:")
+        test['labelDestPort'].grid(row=self.testPosition + 1, column=9, sticky="W")
+
+        test['destPort'] = Entry(self.testFrame,width=5)
+        test['destPort'].grid(row=self.testPosition+1, column=10)
+        if currentTest != None:
+            test['destPort'].insert(0,currentTest['destPort'])
+
+        test['labelResult'] = Label(self.testFrame,text="Resultado:")
+        test['labelResult'].grid(row=self.testPosition + 1, column=11, sticky="W")
+        test['comboBoxResult'] = Combobox(self.testFrame, width=8, values=['ACEITAR', 'NEGAR'])
+        test['comboBoxResult'].grid(row=self.testPosition+1, column=12)
+        if currentTest != None:
+            test['comboBoxResult'].set(currentTest['comboBoxResult'])
+        else:
+            test['comboBoxResult'].current(0)
+
+        test['id'] = uuid.uuid1()
+
+        test['buttonDeleteTest'] = Button(self.testFrame,text="X",command=lambda n=test['id']: self.deleteTest(n))
+        test['buttonDeleteTest'].grid(row=self.testPosition + 1, column=13, sticky="E")
+
+        self.fieldsTest[test['id']] = test
+        
+        self.testPosition += 1
+
+    def deleteTest(self,index):
+        # index = index-1
+        print(index)
+        print(self.fieldsTest[index]['srcPort'])
+        self.fieldsTest[index]['labelTest'].destroy()
+        self.fieldsTest[index]['labelIpSrc'].destroy()
+        self.fieldsTest[index]['srcIP'].destroy()
+        self.fieldsTest[index]['labelIpDest'].destroy()
+        self.fieldsTest[index]['destIP'].destroy()
+        self.fieldsTest[index]['labelProtocol'].destroy()
+        self.fieldsTest[index]['comboBoxProtocolo'].destroy()
+        self.fieldsTest[index]['labelSrcPort'].destroy()
+        self.fieldsTest[index]['srcPort'].destroy()
+        self.fieldsTest[index]['labelDestPort'].destroy()
+        self.fieldsTest[index]['destPort'].destroy()
+        self.fieldsTest[index]['labelResult'].destroy()
+        self.fieldsTest[index]['comboBoxResult'].destroy()
+        self.fieldsTest[index]['buttonDeleteTest'].destroy()
+        # for i in range(index+1,len(self.fieldsTest)):
+        #     self.fieldsTest[i]['labelTest']['text'] = "TESTE {}".format(i)
+        # self.testPosition -= 1
+            
+        del self.fieldsTest[index]
+        # print(self.fieldsTest)
+
+    def cancelAction(self):
+        self.result = self.tests
+        return super().cancelAction()
+
+    def apply(self):
+        self.result = []
+        for test in self.fieldsTest:
+            print(test)
+            currentTest = {}
+            currentTest['srcIP'] = self.fieldsTest[test]['srcIP'].get()
+            currentTest['destIP'] = self.fieldsTest[test]['destIP'].get()
+            currentTest['comboBoxProtocolo'] = self.fieldsTest[test]['comboBoxProtocolo'].get()
+            currentTest['srcPort'] = self.fieldsTest[test]['srcPort'].get()
+            currentTest['destPort'] = self.fieldsTest[test]['destPort'].get()
+            currentTest['comboBoxResult'] = self.fieldsTest[test]['comboBoxResult'].get()
+            self.result.append(currentTest)
+        # print(firewall_tests)
+        firewall_tests = self.result
+        # super().apply()
+
+
 class RouterDialog(CustomDialog):
     def __init__(self, master,title,prefDefaults,links):
         self.prefDefaults = prefDefaults
@@ -200,7 +342,7 @@ class RouterDialog(CustomDialog):
         self.testFrame = Frame(n)
         n.add(self.netPropertiesFrame, text="Propriedades Rede")
         n.add(self.firewallFrame, text="Firewall")
-        n.add(self.testFrame, text="Testes")
+        # n.add(self.testFrame, text="Testes")
         n.pack()
 
         """ Aba 1: Propriedades """
@@ -270,8 +412,7 @@ class RouterDialog(CustomDialog):
         for test in self.prefDefaults['tests']:
             print(test['srcIP'])
             self.addNewRule(test)
-       
-    
+        
     def addNewRule(self,currentTest=None):
         print("Add novo teste")
         
@@ -500,6 +641,8 @@ class Application(Frame):
             "Router": "R",
             "Host"  : "H"
         }
+        # Testes das regras de firewall
+        self.firewallTests = []
 
         self.ultimo = None
 
@@ -1060,6 +1203,11 @@ class Application(Frame):
         print("Application-Shutdown")
         self.master.destroy()
 
+    def cria_testes(self):
+        valor = TestesDialog(self,self.firewallTests)
+        print('criatests',valor.result)
+        self.firewallTests = valor.result
+
     # Cria um menuBar
     def createMenubar(self):    
         "Create our menu bar."
@@ -1068,12 +1216,19 @@ class Application(Frame):
 
 
         fileMenu = Menu( mbar, tearoff=False )
-        mbar.add_cascade( label="File", menu=fileMenu )
+        mbar.add_cascade( label="Arquivos", menu=fileMenu )
         fileMenu.add_command( label="New Topology", command=self.newTopology)
         fileMenu.add_command( label="Load Topology", command=self.loadTopology)
         fileMenu.add_command( label="Save Topology", command=self.saveTopology)
         fileMenu.add_separator()
         fileMenu.add_command( label='Quit',command=self.quit)
+        
+        fileMenuTestes = Menu( mbar, tearoff=False )
+        mbar.add_cascade( label="Testes", menu=fileMenuTestes )
+        # fileMenuTestes.add_command(label='Criar testes',command=TestesDialog)
+        a = fileMenuTestes.add_command(label='Criar testes',command=self.cria_testes)
+        print('firewall_tests',a)
+
     
     def hostDetails(self,event):
         # if( self.selecaoAtual == None or
