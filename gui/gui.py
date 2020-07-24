@@ -834,8 +834,8 @@ class Application(Frame):
         arq = open("cenario","w")
         arq.write(json.dumps(topology))
         arq.close()
-        # thread_run = Th(1)
-        # thread_run.start()
+        thread_run = Th(1)
+        thread_run.start()
 
     def stopScenario(self):
         print("Parando cenário")
