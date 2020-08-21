@@ -799,7 +799,7 @@ class Application(Frame):
                 host['iface'].append({
                     'ip': opts.get('ip',''),
                     'mask': opts.get('mask',''),
-                    'gw': opts.get('gw','')
+                    'gw': opts.get('defaultRoute','')
                 })
                 topology['scene']['hosts'].append(host)
 
